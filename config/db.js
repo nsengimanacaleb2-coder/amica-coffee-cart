@@ -3,17 +3,30 @@ require('dotenv').config();
 const mysql = require('mysql2/promise');
 
 const pool = mysql.createPool({
-  host: process.env.DB_HOST || 'localhost',
-  port: process.env.DB_PORT || 3306,
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'amica_coffee_cart',
+  host: process.env.DB_HOST,
+  port: Number(process.env.DB_PORT),
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
   dateStrings: true,
-  // Set DB_SSL=true in .env for cloud providers that require TLS (e.g. TiDB Cloud, PlanetScale)
-  ssl: process.env.DB_SSL === 'true' ? { minVersion: 'TLSv1.2', rejectUnauthorized: true } : undefined,
+
+  ssl: {
+    minVersion: 'TLSv1.2',
+    rejectUnauthorized: false
+  }
 });
+
+pool.getConnection()
+  .then(connection => {
+    console.log("✅ Connected to Aiven MySQL");
+    connection.release();
+  })
+  .catch(err => {
+    console.error("❌ Database connection failed:", err.message);
+  });
 
 module.exports = pool;
