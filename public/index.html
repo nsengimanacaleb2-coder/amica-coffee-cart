@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Amica House Coffee Cart Booking</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<nav class="site-nav">
+  <div class="wrap">
+    <a href="index.html" class="brand">Amica<span>House</span></a>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="services.html">Coffee Carts</a>
+      <a href="index.html#contact">Contact</a>
+      <span id="nav-auth-slot" style="display:flex;gap:18px;align-items:center;"></span>
+    </div>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap">
+    <p class="eyebrow">Mobile Coffee Catering &middot; Kigali &amp; beyond</p>
+    <h1>A proper coffee cart, wherever your event calls home.</h1>
+    <p>Amica House brings hand-pulled espresso, trained baristas, and a cart that looks the part to weddings, meetings, and parties. Pick a cart, pick a date, and we'll pour the rest.</p>
+    <div class="hero-actions">
+      <a href="services.html" class="btn btn-primary">Browse Coffee Carts</a>
+      <a href="#contact" class="btn btn-outline" style="color:var(--cream);border-color:rgba(255,255,255,0.5)">Ask a Question</a>
+    </div>
+  </div>
+</header>
+
+<section id="services">
+  <div class="wrap">
+    <div class="section-head">
+      <p class="eyebrow">Our Carts</p>
+      <h2>Three ways to serve great coffee</h2>
+    </div>
+    <div class="cart-grid" id="home-cart-grid">
+      <!-- filled by services.js -->
+    </div>
+    <div style="text-align:center;margin-top:36px;">
+      <a href="services.html" class="btn btn-outline">See full details &amp; pricing</a>
+    </div>
+  </div>
+</section>
+
+<section style="background:var(--cream);">
+  <div class="wrap">
+    <div class="section-head">
+      <p class="eyebrow">Why Amica House</p>
+      <h2>What's in every booking</h2>
+    </div>
+    <div class="cart-grid">
+      <div class="ticket" style="padding:24px;">
+        <h3>Trained baristas</h3>
+        <p style="font-size:0.9rem;opacity:0.85;">Every cart comes with a barista who knows the machine, the menu, and how to keep a queue moving.</p>
+      </div>
+      <div class="ticket" style="padding:24px;">
+        <h3>No double bookings</h3>
+        <p style="font-size:0.9rem;opacity:0.85;">Our calendar locks a cart the moment your date is approved, so it's yours and only yours.</p>
+      </div>
+      <div class="ticket" style="padding:24px;">
+        <h3>Track your booking</h3>
+        <p style="font-size:0.9rem;opacity:0.85;">Log in anytime to see whether your request is pending, approved, or ready to go.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="section-head">
+      <p class="eyebrow">Testimonials</p>
+      <h2>From past events</h2>
+    </div>
+    <div class="testimonial-grid" id="testimonial-grid">
+      <!-- filled by script -->
+    </div>
+  </div>
+</section>
+
+<section id="contact" style="background:var(--cream);">
+  <div class="wrap" style="max-width:640px;text-align:center;">
+    <p class="eyebrow">Get in touch</p>
+    <h2>Plan your event with us</h2>
+    <p style="opacity:0.85;">Email <strong>hello@amicahouse.com</strong> or call <strong>+250 780 000 000</strong>. Or simply create an account and submit a booking request — we usually reply within a day.</p>
+    <a href="register.html" class="btn btn-primary" style="margin-top:12px;">Create an account</a>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div>&copy; 2026 Amica House Coffee Cart. All rights reserved.</div>
+    <div>hello@amicahouse.com &middot; +250 780 000 000 &middot; Kigali, Rwanda</div>
+  </div>
+</footer>
+
+<script src="js/api.js"></script>
+<script src="js/nav.js"></script>
+<script>
+  // Load a few carts for the homepage preview
+  async function loadHomeCarts() {
+    const grid = document.getElementById('home-cart-grid');
+    try {
+      const carts = await api('/carts?status=available');
+      grid.innerHTML = carts.slice(0, 3).map(cartCardHtml).join('') ||
+        '<p class="empty-state">No coffee carts available right now — check back soon.</p>';
+    } catch (err) {
+      grid.innerHTML = `<p class="empty-state">Could not load coffee carts: ${err.message}</p>`;
+    }
+  }
+
+  function cartCardHtml(cart) {
+    return `
+      <div class="cart-card">
+        <div class="thumb" style="background-image:url('${cart.image || ''}')">${cart.image ? '' : '☕'}</div>
+        <div class="body">
+          <h3>${cart.cart_name}</h3>
+          <p class="desc">${cart.description || ''}</p>
+          <ul class="equip-list">
+            ${cart.equipment.slice(0, 3).map((e) => `<li>${e}</li>`).join('')}
+          </ul>
+          <div class="price-row">
+            <span class="price-tag">$${Number(cart.price).toFixed(0)}<small>/day</small></span>
+            <a href="cart-details.html?id=${cart.id}" class="btn btn-primary btn-sm">View</a>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  async function loadTestimonials() {
+    const grid = document.getElementById('testimonial-grid');
+    try {
+      const reviews = await api('/reviews');
+      grid.innerHTML = reviews.slice(0, 3).map((r) => `
+        <div class="testimonial">
+          <div class="stars">${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</div>
+          <p style="font-size:0.9rem;">"${r.comment || ''}"</p>
+          <p style="font-size:0.8rem;font-weight:600;margin-top:8px;">${r.customer_name}</p>
+        </div>`).join('') || '<p class="empty-state">No reviews yet — be the first to leave one after your event.</p>';
+    } catch (err) {
+      grid.innerHTML = '<p class="empty-state">Reviews are unavailable right now.</p>';
+    }
+  }
+
+  loadHomeCarts();
+  loadTestimonials();
+</script>
+</body>
+</html>

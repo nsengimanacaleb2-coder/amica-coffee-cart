@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Book a Coffee Cart — Amica House</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<nav class="site-nav">
+  <div class="wrap">
+    <a href="index.html" class="brand">Amica<span>House</span></a>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="services.html">Coffee Carts</a>
+      <span id="nav-auth-slot" style="display:flex;gap:18px;align-items:center;"></span>
+    </div>
+  </div>
+</nav>
+
+<section>
+  <div class="wrap">
+    <div class="section-head">
+      <p class="eyebrow">Booking Request</p>
+      <h2>Tell us about your event</h2>
+    </div>
+    <form class="ticket form-card" id="booking-form" style="max-width:640px;">
+      <input type="hidden" id="cart_id">
+      <div class="field">
+        <label>Selected coffee cart</label>
+        <div id="cart-summary" style="padding:12px 14px;background:var(--kraft);border-radius:8px;font-size:0.9rem;"></div>
+      </div>
+
+      <div class="form-grid">
+        <div class="field">
+          <label for="event_type">Event type</label>
+          <select id="event_type" required>
+            <option value="">Select…</option>
+            <option>Wedding</option>
+            <option>Corporate Meeting</option>
+            <option>Birthday Party</option>
+            <option>Conference</option>
+            <option>Private Party</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="guests">Number of guests</label>
+          <input type="number" id="guests" min="1" required>
+        </div>
+        <div class="field">
+          <label for="event_date">Event date</label>
+          <input type="date" id="event_date" required>
+        </div>
+        <div class="field">
+          <label for="event_time">Event time</label>
+          <input type="time" id="event_time">
+        </div>
+        <div class="field full">
+          <label for="location">Event location</label>
+          <input type="text" id="location" placeholder="e.g. Kigali Convention Center" required>
+        </div>
+        <div class="field full">
+          <label for="message">Additional message</label>
+          <textarea id="message" rows="3" placeholder="Anything else we should know?"></textarea>
+        </div>
+        <div class="field full">
+          <label for="payment_method">Payment method</label>
+          <select id="payment_method" required>
+            <option value="Cash">Cash on the day</option>
+            <option value="Mobile Money">Mobile Money (MTN/Airtel)</option>
+            <option value="Bank Transfer">Bank Transfer</option>
+          </select>
+          <p style="font-size:0.78rem;opacity:0.65;margin-top:6px;">This is just your preferred method — payment itself is confirmed by Amica House after your booking is approved.</p>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="width:100%;">Submit Booking Request</button>
+      <div id="form-msg" class="form-msg"></div>
+    </form>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div>&copy; 2026 Amica House Coffee Cart. All rights reserved.</div>
+    <div>hello@amicahouse.com &middot; +250 780 000 000 &middot; Kigali, Rwanda</div>
+  </div>
+</footer>
+
+<script src="js/api.js"></script>
+<script src="js/nav.js"></script>
+<script>
+  const user = guardPage('customer'); // must be logged in as a customer
+
+  const params = new URLSearchParams(window.location.search);
+  const cartId = params.get('cart');
+  const prefDate = params.get('date');
+
+  if (cartId) document.getElementById('cart_id').value = cartId;
+  if (prefDate) document.getElementById('event_date').value = prefDate;
+
+  async function loadCartSummary() {
+    const summary = document.getElementById('cart-summary');
+    if (!cartId) {
+      summary.innerHTML = 'No cart selected — <a href="services.html">choose one</a>.';
+      return;
+    }
+    try {
+      const cart = await api(`/carts/${cartId}`);
+      summary.innerHTML = `<strong>${cart.cart_name}</strong> — $${Number(cart.price).toFixed(0)}/day`;
+    } catch (err) {
+      summary.textContent = 'Could not load selected cart.';
+    }
+  }
+  loadCartSummary();
+
+  document.getElementById('booking-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const msg = document.getElementById('form-msg');
+    msg.className = 'form-msg';
+
+    const cart_id = document.getElementById('cart_id').value;
+    if (!cart_id) {
+      msg.textContent = 'Please select a coffee cart before booking.';
+      msg.className = 'form-msg error';
+      return;
+    }
+
+    try {
+      await api('/bookings', {
+        method: 'POST',
+        auth: true,
+        body: {
+          cart_id,
+          event_type: document.getElementById('event_type').value,
+          event_date: document.getElementById('event_date').value,
+          event_time: document.getElementById('event_time').value,
+          location: document.getElementById('location').value,
+          guests: document.getElementById('guests').value,
+          message: document.getElementById('message').value,
+          payment_method: document.getElementById('payment_method').value,
+        },
+      });
+      msg.textContent = 'Booking request submitted! Redirecting to your dashboard…';
+      msg.className = 'form-msg success';
+      setTimeout(() => (window.location.href = 'dashboard-customer.html'), 900);
+    } catch (err) {
+      msg.textContent = err.message;
+      msg.className = 'form-msg error';
+    }
+  });
+</script>
+</body>
+</html>

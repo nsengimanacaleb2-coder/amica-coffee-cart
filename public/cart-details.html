@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cart Details — Amica House</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<nav class="site-nav">
+  <div class="wrap">
+    <a href="index.html" class="brand">Amica<span>House</span></a>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="services.html">Coffee Carts</a>
+      <a href="index.html#contact">Contact</a>
+      <span id="nav-auth-slot" style="display:flex;gap:18px;align-items:center;"></span>
+    </div>
+  </div>
+</nav>
+
+<section>
+  <div class="wrap" id="cart-detail-wrap">
+    <p class="empty-state">Loading coffee cart…</p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div>&copy; 2026 Amica House Coffee Cart. All rights reserved.</div>
+    <div>hello@amicahouse.com &middot; +250 780 000 000 &middot; Kigali, Rwanda</div>
+  </div>
+</footer>
+
+<script src="js/api.js"></script>
+<script src="js/nav.js"></script>
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const cartId = params.get('id');
+  const wrap = document.getElementById('cart-detail-wrap');
+
+  async function loadCart() {
+    if (!cartId) {
+      wrap.innerHTML = '<p class="empty-state">No coffee cart selected. <a href="services.html">Browse all carts</a>.</p>';
+      return;
+    }
+    try {
+      const cart = await api(`/carts/${cartId}`);
+      wrap.innerHTML = `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:start;">
+          <div>
+            <div class="thumb" style="height:320px;border-radius:var(--radius);background:var(--kraft-dark) center/cover no-repeat;background-image:url('${cart.image || ''}');display:flex;align-items:center;justify-content:center;font-size:3rem;">${cart.image ? '' : '☕'}</div>
+            <h1 style="margin-top:24px;">${cart.cart_name}</h1>
+            <p style="opacity:0.85;">${cart.description || ''}</p>
+            <ul class="equip-list">
+              ${cart.equipment.map((e) => `<li>${e}</li>`).join('')}
+            </ul>
+            <p style="font-size:0.9rem;opacity:0.75;">Capacity: up to ${cart.capacity || '—'} guests</p>
+            <p class="price-tag" style="font-size:1.6rem;">$${Number(cart.price).toFixed(0)}<small>/day</small></p>
+          </div>
+          <div class="ticket" style="padding:28px;">
+            <h3>Check a date</h3>
+            <div class="field">
+              <label for="check-date">Event date</label>
+              <input type="date" id="check-date">
+            </div>
+            <button class="btn btn-outline" id="check-btn" type="button">Check availability</button>
+            <p id="avail-result" style="font-size:0.88rem;margin-top:10px;"></p>
+            <hr style="border:none;border-top:1px dashed var(--border);margin:20px 0;">
+            <a id="book-link" class="btn btn-primary" href="#">Book this cart</a>
+          </div>
+        </div>
+      `;
+      document.getElementById('check-btn').addEventListener('click', () => checkAvailability(cart.id));
+      updateBookLink(cart.id);
+    } catch (err) {
+      wrap.innerHTML = `<p class="empty-state">Could not load this coffee cart: ${err.message}</p>`;
+    }
+  }
+
+  function updateBookLink(id, date) {
+    const link = document.getElementById('book-link');
+    const user = getUser();
+    let href = `booking.html?cart=${id}`;
+    if (date) href += `&date=${date}`;
+    if (!user) href = `login.html?redirect=${encodeURIComponent(href)}`;
+    link.href = href;
+  }
+
+  async function checkAvailability(cartId) {
+    const date = document.getElementById('check-date').value;
+    const resultEl = document.getElementById('avail-result');
+    if (!date) {
+      resultEl.textContent = 'Please choose a date first.';
+      return;
+    }
+    resultEl.textContent = 'Checking…';
+    try {
+      const { available } = await api(`/carts/${cartId}/availability?date=${date}`);
+      resultEl.textContent = available
+        ? '✓ This cart is available on that date.'
+        : '✗ This cart is already booked on that date. Try another date.';
+      resultEl.style.color = available ? 'var(--sage)' : 'var(--rust)';
+      updateBookLink(cartId, date);
+    } catch (err) {
+      resultEl.textContent = `Could not check availability: ${err.message}`;
+    }
+  }
+
+  loadCart();
+</script>
+</body>
+</html>

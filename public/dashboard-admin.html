@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Dashboard — Amica House</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<nav class="site-nav">
+  <div class="wrap">
+    <a href="index.html" class="brand">Amica<span>House</span></a>
+    <div class="nav-links">
+      <span id="nav-auth-slot" style="display:flex;gap:18px;align-items:center;"></span>
+    </div>
+  </div>
+</nav>
+
+<div class="dash-shell">
+  <aside class="dash-side">
+    <div class="who" id="side-who"></div>
+    <nav>
+      <a href="#" class="view-link active" data-view="overview">Overview</a>
+      <a href="#" class="view-link" data-view="carts">Coffee Carts</a>
+      <a href="#" class="view-link" data-view="bookings">Bookings</a>
+      <a href="#" class="view-link" data-view="customers">Customers</a>
+      <a href="#" class="view-link" data-view="payments">Payments</a>
+    </nav>
+  </aside>
+
+  <main class="dash-main">
+
+    <!-- OVERVIEW -->
+    <div id="view-overview">
+      <h2>Overview</h2>
+      <div class="stat-grid" id="stat-grid">
+        <p class="empty-state">Loading statistics…</p>
+      </div>
+    </div>
+
+    <!-- CARTS -->
+    <div id="view-carts" style="display:none;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <h2>Coffee Cart Management</h2>
+        <button class="btn btn-primary btn-sm" id="new-cart-btn">+ Add Cart</button>
+      </div>
+
+      <form class="form-card" id="cart-form" style="display:none;max-width:none;margin-bottom:24px;">
+        <input type="hidden" id="cart-id">
+        <div class="form-grid">
+          <div class="field"><label for="cf-name">Cart name</label><input id="cf-name" required></div>
+          <div class="field"><label for="cf-price">Price / day ($)</label><input type="number" id="cf-price" required></div>
+          <div class="field"><label for="cf-capacity">Capacity</label><input type="number" id="cf-capacity"></div>
+          <div class="field"><label for="cf-status">Status</label>
+            <select id="cf-status"><option value="available">Available</option><option value="unavailable">Unavailable</option></select>
+          </div>
+          <div class="field full"><label for="cf-image">Image URL</label><input id="cf-image" placeholder="/images/cart-classic.jpg"></div>
+          <div class="field full"><label for="cf-desc">Description</label><textarea id="cf-desc" rows="2"></textarea></div>
+          <div class="field full"><label for="cf-equipment">Equipment (comma separated)</label><input id="cf-equipment" placeholder="Espresso machine, Barista service"></div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm">Save Cart</button>
+        <button type="button" class="btn btn-outline btn-sm" id="cancel-cart-form">Cancel</button>
+        <div id="cart-form-msg" class="form-msg"></div>
+      </form>
+
+      <div class="table-card">
+        <table>
+          <thead><tr><th>Name</th><th>Price</th><th>Capacity</th><th>Status</th><th></th></tr></thead>
+          <tbody id="carts-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- BOOKINGS -->
+    <div id="view-bookings" style="display:none;">
+      <h2>Booking Management</h2>
+      <div class="tabs" id="booking-tabs">
+        <button class="tab-btn active" data-status="">All</button>
+        <button class="tab-btn" data-status="Pending">Pending</button>
+        <button class="tab-btn" data-status="Approved">Approved</button>
+        <button class="tab-btn" data-status="Completed">Completed</button>
+        <button class="tab-btn" data-status="Rejected">Rejected</button>
+        <button class="tab-btn" data-status="Cancelled">Cancelled</button>
+      </div>
+      <div class="table-card">
+        <table>
+          <thead><tr><th>Customer</th><th>Cart</th><th>Event Date</th><th>Location</th><th>Status</th><th>Payment</th><th>Action</th></tr></thead>
+          <tbody id="bookings-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- CUSTOMERS -->
+    <div id="view-customers" style="display:none;">
+      <h2>Customer Management</h2>
+      <div class="table-card">
+        <table>
+          <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Joined</th><th></th></tr></thead>
+          <tbody id="customers-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- PAYMENTS -->
+    <div id="view-payments" style="display:none;">
+      <h2>Payments</h2>
+      <div class="table-card">
+        <table>
+          <thead><tr><th>Customer</th><th>Cart</th><th>Amount</th><th>Method</th><th>Status</th><th>Date</th><th>Action</th></tr></thead>
+          <tbody id="payments-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/nav.js"></script>
+<script>
+  const user = guardPage('admin');
+  document.getElementById('side-who').textContent = `${user.name} · Admin`;
+
+  // ---- View switching ----
+  document.querySelectorAll('.view-link').forEach((link) => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      document.querySelectorAll('.view-link').forEach((l) => l.classList.remove('active'));
+      link.classList.add('active');
+      document.querySelectorAll('[id^="view-"]').forEach((v) => (v.style.display = 'none'));
+      const view = document.getElementById(`view-${link.dataset.view}`);
+      view.style.display = 'block';
+      if (link.dataset.view === 'overview') loadStats();
+      if (link.dataset.view === 'carts') loadCarts();
+      if (link.dataset.view === 'bookings') loadBookings('');
+      if (link.dataset.view === 'customers') loadCustomers();
+      if (link.dataset.view === 'payments') loadPayments();
+    });
+  });
+
+  // ---- Overview ----
+  async function loadStats() {
+    const grid = document.getElementById('stat-grid');
+    try {
+      const s = await api('/reports/summary', { auth: true });
+      grid.innerHTML = `
+        ${statCard(s.totalCarts, 'Total Carts')}
+        ${statCard(s.availableCarts, 'Available Carts')}
+        ${statCard(s.upcomingBookings, 'Upcoming Bookings')}
+        ${statCard(s.totalCustomers, 'Customers')}
+        ${statCard('$' + Number(s.totalRevenue).toFixed(0), 'Revenue Collected')}
+      `;
+    } catch (err) {
+      grid.innerHTML = `<p class="empty-state">Could not load statistics: ${err.message}</p>`;
+    }
+  }
+  function statCard(num, label) {
+    return `<div class="stat-card"><div class="num">${num}</div><div class="label">${label}</div></div>`;
+  }
+
+  // ---- Carts ----
+  async function loadCarts() {
+    const tbody = document.getElementById('carts-table-body');
+    tbody.innerHTML = '<tr><td colspan="5">Loading…</td></tr>';
+    try {
+      const carts = await api('/carts', { auth: true });
+      tbody.innerHTML = carts.map((c) => `
+        <tr>
+          <td>${c.cart_name}</td>
+          <td>$${Number(c.price).toFixed(0)}</td>
+          <td>${c.capacity || '—'}</td>
+          <td><span class="badge badge-${c.status === 'available' ? 'Approved' : 'Rejected'}">${c.status}</span></td>
+          <td>
+            <button class="btn btn-sm btn-outline" onclick='editCart(${JSON.stringify(c)})'>Edit</button>
+            <button class="btn btn-sm btn-danger" onclick="deleteCart(${c.id})">Delete</button>
+          </td>
+        </tr>`).join('') || '<tr><td colspan="5">No coffee carts yet.</td></tr>';
+    } catch (err) {
+      tbody.innerHTML = `<tr><td colspan="5">Could not load carts: ${err.message}</td></tr>`;
+    }
+  }
+
+  const cartForm = document.getElementById('cart-form');
+  document.getElementById('new-cart-btn').addEventListener('click', () => {
+    resetCartForm();
+    cartForm.style.display = 'block';
+  });
+  document.getElementById('cancel-cart-form').addEventListener('click', () => (cartForm.style.display = 'none'));
+
+  function resetCartForm() {
+    ['cart-id', 'cf-name', 'cf-price', 'cf-capacity', 'cf-image', 'cf-desc', 'cf-equipment'].forEach((id) => (document.getElementById(id).value = ''));
+    document.getElementById('cf-status').value = 'available';
+  }
+
+  function editCart(cart) {
+    document.getElementById('cart-id').value = cart.id;
+    document.getElementById('cf-name').value = cart.cart_name;
+    document.getElementById('cf-price').value = cart.price;
+    document.getElementById('cf-capacity').value = cart.capacity || '';
+    document.getElementById('cf-status').value = cart.status;
+    document.getElementById('cf-image').value = cart.image || '';
+    document.getElementById('cf-desc').value = cart.description || '';
+    document.getElementById('cf-equipment').value = (cart.equipment || []).join(', ');
+    cartForm.style.display = 'block';
+    cartForm.scrollIntoView({ behavior: 'smooth' });
+  }
+
+  cartForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const msg = document.getElementById('cart-form-msg');
+    msg.className = 'form-msg';
+    const id = document.getElementById('cart-id').value;
+    const payload = {
+      cart_name: document.getElementById('cf-name').value,
+      price: document.getElementById('cf-price').value,
+      capacity: document.getElementById('cf-capacity').value,
+      status: document.getElementById('cf-status').value,
+      image: document.getElementById('cf-image').value,
+      description: document.getElementById('cf-desc').value,
+      equipment: document.getElementById('cf-equipment').value.split(',').map((s) => s.trim()).filter(Boolean),
+    };
+    try {
+      if (id) {
+        await api(`/carts/${id}`, { method: 'PUT', auth: true, body: payload });
+      } else {
+        await api('/carts', { method: 'POST', auth: true, body: payload });
+      }
+      msg.textContent = 'Saved.';
+      msg.className = 'form-msg success';
+      loadCarts();
+      setTimeout(() => (cartForm.style.display = 'none'), 500);
+    } catch (err) {
+      msg.textContent = err.message;
+      msg.className = 'form-msg error';
+    }
+  });
+
+  async function deleteCart(id) {
+    if (!confirm('Remove this coffee cart?')) return;
+    try {
+      await api(`/carts/${id}`, { method: 'DELETE', auth: true });
+      loadCarts();
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+
+  // ---- Bookings ----
+  let allAdminBookings = [];
+  async function loadBookings(status) {
+    const tbody = document.getElementById('bookings-table-body');
+    tbody.innerHTML = '<tr><td colspan="7">Loading…</td></tr>';
+    try {
+      allAdminBookings = await api(`/bookings${status ? `?status=${status}` : ''}`, { auth: true });
+      renderBookingRows();
+    } catch (err) {
+      tbody.innerHTML = `<tr><td colspan="7">Could not load bookings: ${err.message}</td></tr>`;
+    }
+  }
+
+  function renderBookingRows() {
+    const tbody = document.getElementById('bookings-table-body');
+    tbody.innerHTML = allAdminBookings.map((b) => `
+      <tr>
+        <td>${b.customer_name}<br><small style="opacity:0.6;">${b.customer_email}</small></td>
+        <td>${b.cart_name}</td>
+        <td>${new Date(b.event_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</td>
+        <td>${b.location || '—'}</td>
+        <td><span class="badge badge-${b.status}">${b.status}</span></td>
+        <td>
+          ${b.payment_method
+            ? `${b.payment_method}<br><span class="badge badge-${b.payment_status === 'Paid' ? 'Approved' : 'Pending'}">${b.payment_status}</span>`
+            : '—'}
+        </td>
+        <td>
+          ${b.status === 'Pending' ? `
+            <button class="btn btn-sm btn-primary" onclick="setBookingStatus(${b.id}, 'Approved')">Approve</button>
+            <button class="btn btn-sm btn-danger" onclick="setBookingStatus(${b.id}, 'Rejected')">Reject</button>
+          ` : b.status === 'Approved' ? `
+            <button class="btn btn-sm btn-outline" onclick="setBookingStatus(${b.id}, 'Completed')">Mark Completed</button>
+          ` : ''}
+        </td>
+      </tr>`).join('') || '<tr><td colspan="7">No bookings in this category.</td></tr>';
+  }
+
+  document.querySelectorAll('#booking-tabs .tab-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#booking-tabs .tab-btn').forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      loadBookings(btn.dataset.status);
+    });
+  });
+
+  async function setBookingStatus(id, status) {
+    try {
+      await api(`/bookings/${id}/status`, { method: 'PATCH', auth: true, body: { status } });
+      loadBookings(document.querySelector('#booking-tabs .tab-btn.active').dataset.status);
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+
+  // ---- Customers ----
+  async function loadCustomers() {
+    const tbody = document.getElementById('customers-table-body');
+    tbody.innerHTML = '<tr><td colspan="5">Loading…</td></tr>';
+    try {
+      const customers = await api('/users', { auth: true });
+      tbody.innerHTML = customers.map((c) => `
+        <tr>
+          <td>${c.name}</td>
+          <td>${c.email}</td>
+          <td>${c.phone || '—'}</td>
+          <td>${new Date(c.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</td>
+          <td><button class="btn btn-sm btn-danger" onclick="deleteCustomer(${c.id})">Remove</button></td>
+        </tr>`).join('') || '<tr><td colspan="5">No customers yet.</td></tr>';
+    } catch (err) {
+      tbody.innerHTML = `<tr><td colspan="5">Could not load customers: ${err.message}</td></tr>`;
+    }
+  }
+
+  async function deleteCustomer(id) {
+    if (!confirm('Remove this customer account? This also removes their bookings.')) return;
+    try {
+      await api(`/users/${id}`, { method: 'DELETE', auth: true });
+      loadCustomers();
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+
+  // ---- Payments ----
+  async function loadPayments() {
+    const tbody = document.getElementById('payments-table-body');
+    tbody.innerHTML = '<tr><td colspan="7">Loading…</td></tr>';
+    try {
+      const payments = await api('/payments', { auth: true });
+      tbody.innerHTML = payments.map((p) => `
+        <tr>
+          <td>${p.customer_name}</td>
+          <td>${p.cart_name}</td>
+          <td>$${Number(p.amount).toFixed(2)}</td>
+          <td>${p.payment_method}</td>
+          <td><span class="badge badge-${p.payment_status === 'Paid' ? 'Approved' : 'Pending'}">${p.payment_status}</span></td>
+          <td>${new Date(p.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</td>
+          <td>
+            ${p.payment_status === 'Pending' ? `
+              <button class="btn btn-sm btn-primary" onclick="setPaymentStatus(${p.id}, 'Paid')">Mark Paid</button>
+              <button class="btn btn-sm btn-danger" onclick="setPaymentStatus(${p.id}, 'Failed')">Mark Failed</button>
+            ` : p.payment_status === 'Paid' ? `
+              <button class="btn btn-sm btn-outline" onclick="setPaymentStatus(${p.id}, 'Refunded')">Refund</button>
+            ` : ''}
+          </td>
+        </tr>`).join('') || '<tr><td colspan="7">No payments recorded yet.</td></tr>';
+    } catch (err) {
+      tbody.innerHTML = `<tr><td colspan="7">Could not load payments: ${err.message}</td></tr>`;
+    }
+  }
+
+  async function setPaymentStatus(id, payment_status) {
+    try {
+      await api(`/payments/${id}/status`, { method: 'PATCH', auth: true, body: { payment_status } });
+      loadPayments();
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+
+  loadStats();
+</script>
+</body>
+</html>

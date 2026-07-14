@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Dashboard — Amica House</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<nav class="site-nav">
+  <div class="wrap">
+    <a href="index.html" class="brand">Amica<span>House</span></a>
+    <div class="nav-links">
+      <a href="services.html">Coffee Carts</a>
+      <span id="nav-auth-slot" style="display:flex;gap:18px;align-items:center;"></span>
+    </div>
+  </div>
+</nav>
+
+<div class="dash-shell">
+  <aside class="dash-side">
+    <div class="who" id="side-who"></div>
+    <nav>
+      <a href="#" class="active">My Bookings</a>
+      <a href="services.html">Book a New Cart</a>
+      <a href="#profile-section">My Profile</a>
+    </nav>
+  </aside>
+
+  <main class="dash-main">
+    <h2>My Bookings</h2>
+    <div class="tabs" id="status-tabs">
+      <button class="tab-btn active" data-status="">All</button>
+      <button class="tab-btn" data-status="Pending">Pending</button>
+      <button class="tab-btn" data-status="Approved">Approved</button>
+      <button class="tab-btn" data-status="Completed">Completed</button>
+      <button class="tab-btn" data-status="Cancelled">Cancelled</button>
+    </div>
+
+    <div id="bookings-list"></div>
+
+    <div id="profile-section" style="margin-top:48px;max-width:480px;">
+      <h2>My Profile</h2>
+      <form class="form-card" id="profile-form" style="max-width:none;">
+        <div class="field">
+          <label for="p-name">Full name</label>
+          <input type="text" id="p-name">
+        </div>
+        <div class="field">
+          <label for="p-email">Email (cannot be changed)</label>
+          <input type="email" id="p-email" disabled>
+        </div>
+        <div class="field">
+          <label for="p-phone">Phone number</label>
+          <input type="tel" id="p-phone">
+        </div>
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+        <div id="profile-msg" class="form-msg"></div>
+      </form>
+    </div>
+  </main>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/nav.js"></script>
+<script>
+  const user = guardPage('customer');
+  document.getElementById('side-who').textContent = `${user.name} · Customer`;
+
+  let allBookings = [];
+
+  async function loadBookings() {
+    const list = document.getElementById('bookings-list');
+    list.innerHTML = '<p class="empty-state">Loading your bookings…</p>';
+    try {
+      allBookings = await api('/bookings/me', { auth: true });
+      renderBookings('');
+    } catch (err) {
+      list.innerHTML = `<p class="empty-state">Could not load bookings: ${err.message}</p>`;
+    }
+  }
+
+  function renderBookings(filterStatus) {
+    const list = document.getElementById('bookings-list');
+    const rows = filterStatus ? allBookings.filter((b) => b.status === filterStatus) : allBookings;
+
+    if (rows.length === 0) {
+      list.innerHTML = '<p class="empty-state">No bookings here yet. <a href="services.html">Browse coffee carts</a> to make one.</p>';
+      return;
+    }
+
+    list.innerHTML = `
+      <div class="table-card">
+        <table>
+          <thead>
+            <tr><th>Cart</th><th>Event</th><th>Date</th><th>Location</th><th>Status</th><th>Payment</th><th></th></tr>
+          </thead>
+          <tbody>
+            ${rows.map((b) => `
+              <tr>
+                <td>${b.cart_name}</td>
+                <td>${b.event_type || '—'}</td>
+                <td>${formatDate(b.event_date)}</td>
+                <td>${b.location || '—'}</td>
+                <td><span class="badge badge-${b.status}">${b.status}</span></td>
+                <td>
+                  ${b.payment_method
+                    ? `${b.payment_method}<br><span class="badge badge-${b.payment_status === 'Paid' ? 'Approved' : 'Pending'}">${b.payment_status}</span>`
+                    : '—'}
+                </td>
+                <td>
+                  ${['Pending', 'Approved'].includes(b.status)
+                    ? `<button class="btn btn-sm btn-outline" onclick="cancelBooking(${b.id})">Cancel</button>`
+                    : ''}
+                </td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>`;
+  }
+
+  function formatDate(d) {
+    return new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  }
+
+  async function cancelBooking(id) {
+    if (!confirm('Cancel this booking?')) return;
+    try {
+      await api(`/bookings/${id}/cancel`, { method: 'PATCH', auth: true });
+      loadBookings();
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+
+  document.querySelectorAll('.tab-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderBookings(btn.dataset.status);
+    });
+  });
+
+  async function loadProfile() {
+    try {
+      const profile = await api('/users/me', { auth: true });
+      document.getElementById('p-name').value = profile.name;
+      document.getElementById('p-email').value = profile.email;
+      document.getElementById('p-phone').value = profile.phone || '';
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  document.getElementById('profile-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const msg = document.getElementById('profile-msg');
+    msg.className = 'form-msg';
+    try {
+      await api('/users/me', {
+        method: 'PUT',
+        auth: true,
+        body: { name: document.getElementById('p-name').value, phone: document.getElementById('p-phone').value },
+      });
+      msg.textContent = 'Profile updated.';
+      msg.className = 'form-msg success';
+    } catch (err) {
+      msg.textContent = err.message;
+      msg.className = 'form-msg error';
+    }
+  });
+
+  loadBookings();
+  loadProfile();
+</script>
+</body>
+</html>

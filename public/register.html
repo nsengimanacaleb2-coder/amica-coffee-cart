@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Create Account — Amica House</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<nav class="site-nav">
+  <div class="wrap">
+    <a href="index.html" class="brand">Amica<span>House</span></a>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="services.html">Coffee Carts</a>
+      <span id="nav-auth-slot" style="display:flex;gap:18px;align-items:center;"></span>
+    </div>
+  </div>
+</nav>
+
+<section>
+  <div class="wrap">
+    <div class="section-head">
+      <p class="eyebrow">Join Amica House</p>
+      <h2>Create your account</h2>
+    </div>
+    <form class="form-card" id="register-form">
+      <div class="field">
+        <label for="name">Full name</label>
+        <input type="text" id="name" required>
+      </div>
+      <div class="field">
+        <label for="email">Email</label>
+        <input type="email" id="email" required>
+      </div>
+      <div class="field">
+        <label for="phone">Phone number</label>
+        <input type="tel" id="phone">
+      </div>
+      <div class="field">
+        <label for="password">Password</label>
+        <input type="password" id="password" minlength="6" required>
+      </div>
+      <button type="submit" class="btn btn-primary" style="width:100%;">Create Account</button>
+      <div id="form-msg" class="form-msg"></div>
+      <p style="font-size:0.85rem;text-align:center;margin-top:16px;">Already have an account? <a href="login.html" style="color:var(--marigold);font-weight:600;">Log in</a></p>
+    </form>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div>&copy; 2026 Amica House Coffee Cart. All rights reserved.</div>
+    <div>hello@amicahouse.com &middot; +250 780 000 000 &middot; Kigali, Rwanda</div>
+  </div>
+</footer>
+
+<script src="js/api.js"></script>
+<script src="js/nav.js"></script>
+<script>
+  document.getElementById('register-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const msg = document.getElementById('form-msg');
+    msg.className = 'form-msg';
+    try {
+      const { token, user } = await api('/auth/register', {
+        method: 'POST',
+        body: {
+          name: document.getElementById('name').value,
+          email: document.getElementById('email').value,
+          phone: document.getElementById('phone').value,
+          password: document.getElementById('password').value,
+        },
+      });
+      setSession(token, user);
+      msg.textContent = 'Account created! Redirecting…';
+      msg.className = 'form-msg success';
+      setTimeout(() => (window.location.href = 'dashboard-customer.html'), 700);
+    } catch (err) {
+      msg.textContent = err.message;
+      msg.className = 'form-msg error';
+    }
+  });
+</script>
+</body>
+</html>

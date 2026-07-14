@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Coffee Cart Services — Amica House</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<nav class="site-nav">
+  <div class="wrap">
+    <a href="index.html" class="brand">Amica<span>House</span></a>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="services.html">Coffee Carts</a>
+      <a href="index.html#contact">Contact</a>
+      <span id="nav-auth-slot" style="display:flex;gap:18px;align-items:center;"></span>
+    </div>
+  </div>
+</nav>
+
+<header class="hero" style="padding:56px 0;">
+  <div class="wrap">
+    <p class="eyebrow">Coffee Cart Services</p>
+    <h1 style="font-size:2.2rem;">Pick the cart that fits your event</h1>
+  </div>
+</header>
+
+<section>
+  <div class="wrap">
+    <div class="cart-grid" id="cart-grid">
+      <!-- filled by script -->
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div>&copy; 2026 Amica House Coffee Cart. All rights reserved.</div>
+    <div>hello@amicahouse.com &middot; +250 780 000 000 &middot; Kigali, Rwanda</div>
+  </div>
+</footer>
+
+<script src="js/api.js"></script>
+<script src="js/nav.js"></script>
+<script>
+  async function loadCarts() {
+    const grid = document.getElementById('cart-grid');
+    try {
+      const carts = await api('/carts');
+      grid.innerHTML = carts.map((cart) => `
+        <div class="cart-card">
+          <div class="thumb" style="background-image:url('${cart.image || ''}')">${cart.image ? '' : '☕'}</div>
+          <div class="body">
+            <h3>${cart.cart_name}</h3>
+            <p class="desc">${cart.description || ''}</p>
+            <ul class="equip-list">
+              ${cart.equipment.map((e) => `<li>${e}</li>`).join('')}
+            </ul>
+            <p style="font-size:0.8rem;opacity:0.7;">Capacity: up to ${cart.capacity || '—'} guests</p>
+            <div class="price-row">
+              <span class="price-tag">$${Number(cart.price).toFixed(0)}<small>/day</small></span>
+              <a href="cart-details.html?id=${cart.id}" class="btn btn-primary btn-sm">Book this cart</a>
+            </div>
+          </div>
+        </div>`).join('') || '<p class="empty-state">No coffee carts available right now — check back soon.</p>';
+    } catch (err) {
+      grid.innerHTML = `<p class="empty-state">Could not load coffee carts: ${err.message}</p>`;
+    }
+  }
+  loadCarts();
+</script>
+</body>
+</html>
