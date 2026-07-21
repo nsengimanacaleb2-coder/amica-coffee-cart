@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Coffee Menu — Amica House</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<nav class="site-nav">
+  <div class="wrap">
+    <a href="index.html" class="brand">Amica<span>House</span></a>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="services.html">Coffee Carts</a>
+      <a href="packages.html">Packages</a>
+      <a href="menu.html">Menu</a>
+      <a href="gallery.html">Gallery</a>
+      <a href="faq.html">FAQ</a>
+      <span id="nav-auth-slot" style="display:flex;gap:18px;align-items:center;"></span>
+    </div>
+  </div>
+</nav>
+
+<header class="hero" id="main-content" style="padding:56px 0;">
+  <div class="wrap">
+    <p class="eyebrow">Coffee Menu</p>
+    <h1 style="font-size:2.2rem;">What we pour</h1>
+  </div>
+</header>
+
+<section>
+  <div class="wrap" id="menu-wrap">
+    <p class="empty-state">Loading menu…</p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div>&copy; 2026 Amica House Coffee Cart. All rights reserved.</div>
+    <div>hello@amicahouse.com &middot; +250 780 000 000 &middot; Kigali, Rwanda</div>
+  </div>
+</footer>
+
+<script src="js/api.js"></script>
+<script src="js/nav.js"></script>
+<script src="js/widgets.js"></script>
+<script>
+  async function loadMenu() {
+    const wrap = document.getElementById('menu-wrap');
+    try {
+      const items = await api('/menu');
+      const byCategory = {};
+      items.forEach((i) => { (byCategory[i.category] = byCategory[i.category] || []).push(i); });
+
+      wrap.innerHTML = Object.entries(byCategory).map(([category, list]) => `
+        <div style="margin-bottom:36px;">
+          <h3 style="border-bottom:1px dashed var(--border);padding-bottom:8px;">${category}</h3>
+          <div class="table-card" style="margin-top:12px;">
+            <table>
+              <tbody>
+                ${list.map((i) => `
+                  <tr>
+                    <td><strong>${i.name}</strong><br><span style="opacity:0.7;font-size:0.85rem;">${i.description || ''}</span></td>
+                    <td style="text-align:right;">$${Number(i.price || 0).toFixed(2)}</td>
+                  </tr>`).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>`).join('') || '<p class="empty-state">Menu coming soon.</p>';
+    } catch (err) {
+      wrap.innerHTML = `<p class="empty-state">Could not load the menu: ${err.message}</p>`;
+    }
+  }
+  loadMenu();
+</script>
+</body>
+</html>

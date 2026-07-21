@@ -14,13 +14,17 @@
     <div class="nav-links">
       <a href="index.html">Home</a>
       <a href="services.html">Coffee Carts</a>
+      <a href="packages.html">Packages</a>
+      <a href="menu.html">Menu</a>
+      <a href="gallery.html">Gallery</a>
+      <a href="faq.html">FAQ</a>
       <a href="index.html#contact">Contact</a>
       <span id="nav-auth-slot" style="display:flex;gap:18px;align-items:center;"></span>
     </div>
   </div>
 </nav>
 
-<section>
+<section id="main-content">
   <div class="wrap" id="cart-detail-wrap">
     <p class="empty-state">Loading coffee cart…</p>
   </div>
@@ -35,6 +39,7 @@
 
 <script src="js/api.js"></script>
 <script src="js/nav.js"></script>
+<script src="js/widgets.js"></script>
 <script>
   const params = new URLSearchParams(window.location.search);
   const cartId = params.get('id');
@@ -58,6 +63,7 @@
             </ul>
             <p style="font-size:0.9rem;opacity:0.75;">Capacity: up to ${cart.capacity || '—'} guests</p>
             <p class="price-tag" style="font-size:1.6rem;">$${Number(cart.price).toFixed(0)}<small>/day</small></p>
+            <button class="btn btn-outline btn-sm" id="fav-btn" type="button">♡ Save to favorites</button>
           </div>
           <div class="ticket" style="padding:28px;">
             <h3>Check a date</h3>
@@ -74,9 +80,27 @@
       `;
       document.getElementById('check-btn').addEventListener('click', () => checkAvailability(cart.id));
       updateBookLink(cart.id);
+      setupFavoriteButton(cart.id);
     } catch (err) {
       wrap.innerHTML = `<p class="empty-state">Could not load this coffee cart: ${err.message}</p>`;
     }
+  }
+
+  function setupFavoriteButton(cartId) {
+    const btn = document.getElementById('fav-btn');
+    const user = getUser();
+    if (!user) {
+      btn.addEventListener('click', () => (window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`));
+      return;
+    }
+    btn.addEventListener('click', async () => {
+      try {
+        const { favorited } = await api(`/favorites/${cartId}`, { method: 'POST', auth: true });
+        btn.textContent = favorited ? '♥ Saved to favorites' : '♡ Save to favorites';
+      } catch (err) {
+        alert(err.message);
+      }
+    });
   }
 
   function updateBookLink(id, date) {

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Booking Receipt — Amica House</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<nav class="site-nav no-print">
+  <div class="wrap">
+    <a href="index.html" class="brand">Amica<span>House</span></a>
+    <div class="nav-links">
+      <span id="nav-auth-slot" style="display:flex;gap:18px;align-items:center;"></span>
+    </div>
+  </div>
+</nav>
+
+<section id="main-content">
+  <div class="wrap">
+    <div class="receipt-card" id="receipt-card">
+      <p class="empty-state">Loading receipt…</p>
+    </div>
+    <div style="text-align:center;margin-top:20px;" class="no-print">
+      <button class="btn btn-primary" onclick="window.print()">🖨 Print / Save as PDF</button>
+    </div>
+  </div>
+</section>
+
+<script src="js/api.js"></script>
+<script src="js/nav.js"></script>
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const bookingId = params.get('id');
+
+  async function loadReceipt() {
+    const card = document.getElementById('receipt-card');
+    const user = getUser();
+    if (!user) {
+      window.location.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`;
+      return;
+    }
+    if (!bookingId) {
+      card.innerHTML = '<p class="empty-state">No booking specified.</p>';
+      return;
+    }
+    try {
+      const b = await api(`/bookings/${bookingId}`, { auth: true });
+      const qrData = encodeURIComponent(`Amica House Booking #${b.id} — ${b.cart_name} — ${b.event_date} — ${b.customer_name}`);
+      card.innerHTML = `
+        <div style="text-align:center;margin-bottom:20px;">
+          <h2 style="margin-bottom:4px;">Amica House Coffee Cart</h2>
+          <p style="opacity:0.7;font-size:0.85rem;">Booking Receipt</p>
+        </div>
+        <div class="receipt-row"><span>Booking #</span><strong>${b.id}</strong></div>
+        <div class="receipt-row"><span>Customer</span><strong>${b.customer_name}</strong></div>
+        <div class="receipt-row"><span>Coffee Cart</span><strong>${b.cart_name}</strong></div>
+        ${b.package_name ? `<div class="receipt-row"><span>Package</span><strong>${b.package_name}</strong></div>` : ''}
+        <div class="receipt-row"><span>Event Date</span><strong>${new Date(b.event_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</strong></div>
+        <div class="receipt-row"><span>Location</span><strong>${b.location || '—'}</strong></div>
+        <div class="receipt-row"><span>Guests</span><strong>${b.guests || '—'}</strong></div>
+        <div class="receipt-row"><span>Status</span><span class="badge badge-${b.status}">${b.status}</span></div>
+        <div class="receipt-row"><span>Payment Method</span><strong>${b.payment_method || '—'}</strong></div>
+        <div class="receipt-row"><span>Payment Status</span><span class="badge badge-${b.payment_status === 'Paid' ? 'Approved' : 'Pending'}">${b.payment_status || 'Pending'}</span></div>
+        <div class="receipt-row"><span>Total</span><strong>$${Number(b.estimated_price || b.payment_amount || 0).toFixed(2)}</strong></div>
+        <div style="text-align:center;margin-top:24px;">
+          <img src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=${qrData}" alt="Booking confirmation QR code" width="140" height="140">
+          <p style="font-size:0.72rem;opacity:0.6;margin-top:6px;">Scan to verify this booking</p>
+        </div>
+      `;
+    } catch (err) {
+      card.innerHTML = `<p class="empty-state">Could not load this receipt: ${err.message}</p>`;
+    }
+  }
+  loadReceipt();
+</script>
+</body>
+</html>

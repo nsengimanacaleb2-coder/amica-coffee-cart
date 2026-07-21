@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin Dashboard — Amica House</title>
 <link rel="stylesheet" href="css/style.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 </head>
 <body>
 
@@ -17,15 +18,20 @@
   </div>
 </nav>
 
-<div class="dash-shell">
+<div class="dash-shell" id="main-content">
   <aside class="dash-side">
     <div class="who" id="side-who"></div>
     <nav>
       <a href="#" class="view-link active" data-view="overview">Overview</a>
+      <a href="#" class="view-link" data-view="analytics">Analytics</a>
       <a href="#" class="view-link" data-view="carts">Coffee Carts</a>
       <a href="#" class="view-link" data-view="bookings">Bookings</a>
       <a href="#" class="view-link" data-view="customers">Customers</a>
       <a href="#" class="view-link" data-view="payments">Payments</a>
+      <a href="#" class="view-link" data-view="packages">Packages</a>
+      <a href="#" class="view-link" data-view="menu">Menu</a>
+      <a href="#" class="view-link" data-view="promo">Promo Codes</a>
+      <a href="#" class="view-link" data-view="newsletter">Newsletter</a>
     </nav>
   </aside>
 
@@ -36,6 +42,21 @@
       <h2>Overview</h2>
       <div class="stat-grid" id="stat-grid">
         <p class="empty-state">Loading statistics…</p>
+      </div>
+    </div>
+
+    <!-- ANALYTICS -->
+    <div id="view-analytics" style="display:none;">
+      <h2>Analytics</h2>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+        <div class="table-card" style="padding:20px;">
+          <h3 style="margin-bottom:12px;">Revenue by month</h3>
+          <canvas id="revenue-chart" height="220"></canvas>
+        </div>
+        <div class="table-card" style="padding:20px;">
+          <h3 style="margin-bottom:12px;">Popular event types</h3>
+          <canvas id="event-type-chart" height="220"></canvas>
+        </div>
       </div>
     </div>
 
@@ -74,7 +95,10 @@
 
     <!-- BOOKINGS -->
     <div id="view-bookings" style="display:none;">
-      <h2>Booking Management</h2>
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <h2>Booking Management</h2>
+        <button class="btn btn-outline btn-sm" id="export-csv-btn">⬇ Export to CSV</button>
+      </div>
       <div class="tabs" id="booking-tabs">
         <button class="tab-btn active" data-status="">All</button>
         <button class="tab-btn" data-status="Pending">Pending</button>
@@ -113,11 +137,103 @@
       </div>
     </div>
 
+    <!-- PACKAGES -->
+    <div id="view-packages" style="display:none;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <h2>Package Management</h2>
+        <button class="btn btn-primary btn-sm" id="new-package-btn">+ Add Package</button>
+      </div>
+      <form class="form-card" id="package-form" style="display:none;max-width:none;margin-bottom:24px;">
+        <input type="hidden" id="package-id">
+        <div class="form-grid">
+          <div class="field"><label for="pf-name">Package name</label><input id="pf-name" required></div>
+          <div class="field"><label for="pf-price">Price ($)</label><input type="number" id="pf-price" required></div>
+          <div class="field full"><label for="pf-event-type">Event type</label><input id="pf-event-type" placeholder="Wedding"></div>
+          <div class="field full"><label for="pf-desc">Description</label><textarea id="pf-desc" rows="2"></textarea></div>
+          <div class="field full"><label for="pf-services">Included services (comma separated)</label><input id="pf-services"></div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm">Save Package</button>
+        <button type="button" class="btn btn-outline btn-sm" id="cancel-package-form">Cancel</button>
+        <div id="package-form-msg" class="form-msg"></div>
+      </form>
+      <div class="table-card">
+        <table>
+          <thead><tr><th>Name</th><th>Event Type</th><th>Price</th><th></th></tr></thead>
+          <tbody id="packages-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- MENU -->
+    <div id="view-menu" style="display:none;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <h2>Menu Management</h2>
+        <button class="btn btn-primary btn-sm" id="new-menu-btn">+ Add Item</button>
+      </div>
+      <form class="form-card" id="menu-form" style="display:none;max-width:none;margin-bottom:24px;">
+        <div class="form-grid">
+          <div class="field"><label for="mf-name">Item name</label><input id="mf-name" required></div>
+          <div class="field"><label for="mf-category">Category</label><input id="mf-category" placeholder="Coffee"></div>
+          <div class="field"><label for="mf-price">Price ($)</label><input type="number" id="mf-price"></div>
+          <div class="field full"><label for="mf-desc">Description</label><input id="mf-desc"></div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm">Add Item</button>
+        <button type="button" class="btn btn-outline btn-sm" id="cancel-menu-form">Cancel</button>
+        <div id="menu-form-msg" class="form-msg"></div>
+      </form>
+      <div class="table-card">
+        <table>
+          <thead><tr><th>Name</th><th>Category</th><th>Price</th><th></th></tr></thead>
+          <tbody id="menu-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- PROMO CODES -->
+    <div id="view-promo" style="display:none;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <h2>Promo Codes</h2>
+        <button class="btn btn-primary btn-sm" id="new-promo-btn">+ Add Code</button>
+      </div>
+      <form class="form-card" id="promo-form" style="display:none;max-width:none;margin-bottom:24px;">
+        <div class="form-grid">
+          <div class="field"><label for="prf-code">Code</label><input id="prf-code" placeholder="SUMMER20" required></div>
+          <div class="field"><label for="prf-type">Discount type</label>
+            <select id="prf-type"><option value="percent">Percent (%)</option><option value="fixed">Fixed ($)</option></select>
+          </div>
+          <div class="field"><label for="prf-value">Discount value</label><input type="number" id="prf-value" required></div>
+          <div class="field"><label for="prf-max">Max uses (optional)</label><input type="number" id="prf-max"></div>
+          <div class="field"><label for="prf-expires">Expires (optional)</label><input type="date" id="prf-expires"></div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm">Save Code</button>
+        <button type="button" class="btn btn-outline btn-sm" id="cancel-promo-form">Cancel</button>
+        <div id="promo-form-msg" class="form-msg"></div>
+      </form>
+      <div class="table-card">
+        <table>
+          <thead><tr><th>Code</th><th>Discount</th><th>Used</th><th>Expires</th><th>Status</th><th></th></tr></thead>
+          <tbody id="promo-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- NEWSLETTER -->
+    <div id="view-newsletter" style="display:none;">
+      <h2>Newsletter Subscribers</h2>
+      <div class="table-card">
+        <table>
+          <thead><tr><th>Email</th><th>Subscribed</th></tr></thead>
+          <tbody id="newsletter-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+
   </main>
 </div>
 
 <script src="js/api.js"></script>
 <script src="js/nav.js"></script>
+<script src="js/widgets.js"></script>
 <script>
   const user = guardPage('admin');
   document.getElementById('side-who').textContent = `${user.name} · Admin`;
@@ -132,10 +248,15 @@
       const view = document.getElementById(`view-${link.dataset.view}`);
       view.style.display = 'block';
       if (link.dataset.view === 'overview') loadStats();
+      if (link.dataset.view === 'analytics') loadAnalytics();
       if (link.dataset.view === 'carts') loadCarts();
       if (link.dataset.view === 'bookings') loadBookings('');
       if (link.dataset.view === 'customers') loadCustomers();
       if (link.dataset.view === 'payments') loadPayments();
+      if (link.dataset.view === 'packages') loadPackagesAdmin();
+      if (link.dataset.view === 'menu') loadMenuAdmin();
+      if (link.dataset.view === 'promo') loadPromoAdmin();
+      if (link.dataset.view === 'newsletter') loadNewsletterAdmin();
     });
   });
 
@@ -292,6 +413,20 @@
     });
   });
 
+  document.getElementById('export-csv-btn').addEventListener('click', () => {
+    if (allAdminBookings.length === 0) return alert('No bookings to export.');
+    const headers = ['ID', 'Customer', 'Email', 'Cart', 'Event Date', 'Location', 'Status', 'Payment Method', 'Payment Status'];
+    const rows = allAdminBookings.map((b) => [
+      b.id, b.customer_name, b.customer_email, b.cart_name, b.event_date, b.location || '', b.status, b.payment_method || '', b.payment_status || '',
+    ]);
+    const csv = [headers, ...rows].map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `amica-bookings-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+  });
+
   async function setBookingStatus(id, status) {
     try {
       await api(`/bookings/${id}/status`, { method: 'PATCH', auth: true, body: { status } });
@@ -364,6 +499,211 @@
       loadPayments();
     } catch (err) {
       alert(err.message);
+    }
+  }
+
+  // ---- Analytics ----
+  let revenueChartInstance, eventTypeChartInstance;
+  async function loadAnalytics() {
+    try {
+      const revenue = await api('/reports/revenue-by-month', { auth: true });
+      const ctx1 = document.getElementById('revenue-chart');
+      if (revenueChartInstance) revenueChartInstance.destroy();
+      revenueChartInstance = new Chart(ctx1, {
+        type: 'line',
+        data: {
+          labels: revenue.map((r) => r.month),
+          datasets: [{ label: 'Revenue ($)', data: revenue.map((r) => r.revenue), borderColor: '#D69A2D', backgroundColor: 'rgba(214,154,45,0.2)', fill: true, tension: 0.3 }],
+        },
+        options: { plugins: { legend: { display: false } } },
+      });
+    } catch (err) { console.error(err); }
+
+    try {
+      const types = await api('/reports/popular-event-types', { auth: true });
+      const ctx2 = document.getElementById('event-type-chart');
+      if (eventTypeChartInstance) eventTypeChartInstance.destroy();
+      eventTypeChartInstance = new Chart(ctx2, {
+        type: 'doughnut',
+        data: {
+          labels: types.map((t) => t.event_type),
+          datasets: [{ data: types.map((t) => t.total), backgroundColor: ['#D69A2D', '#6E7F5C', '#B34700', '#2A1C14', '#9BB187', '#E3AE44'] }],
+        },
+      });
+    } catch (err) { console.error(err); }
+  }
+
+  // ---- Packages ----
+  async function loadPackagesAdmin() {
+    const tbody = document.getElementById('packages-table-body');
+    tbody.innerHTML = '<tr><td colspan="4">Loading…</td></tr>';
+    try {
+      const packages = await api('/packages', { auth: true });
+      tbody.innerHTML = packages.map((p) => `
+        <tr>
+          <td>${p.name}</td>
+          <td>${p.event_type || '—'}</td>
+          <td>$${Number(p.price).toFixed(0)}</td>
+          <td>
+            <button class="btn btn-sm btn-outline" onclick='editPackage(${JSON.stringify(p)})'>Edit</button>
+            <button class="btn btn-sm btn-danger" onclick="deletePackage(${p.id})">Delete</button>
+          </td>
+        </tr>`).join('') || '<tr><td colspan="4">No packages yet.</td></tr>';
+    } catch (err) {
+      tbody.innerHTML = `<tr><td colspan="4">Could not load packages: ${err.message}</td></tr>`;
+    }
+  }
+  const packageForm = document.getElementById('package-form');
+  document.getElementById('new-package-btn').addEventListener('click', () => {
+    ['package-id', 'pf-name', 'pf-price', 'pf-event-type', 'pf-desc', 'pf-services'].forEach((id) => (document.getElementById(id).value = ''));
+    packageForm.style.display = 'block';
+  });
+  document.getElementById('cancel-package-form').addEventListener('click', () => (packageForm.style.display = 'none'));
+  function editPackage(p) {
+    document.getElementById('package-id').value = p.id;
+    document.getElementById('pf-name').value = p.name;
+    document.getElementById('pf-price').value = p.price;
+    document.getElementById('pf-event-type').value = p.event_type || '';
+    document.getElementById('pf-desc').value = p.description || '';
+    document.getElementById('pf-services').value = (p.included_services || []).join(', ');
+    packageForm.style.display = 'block';
+    packageForm.scrollIntoView({ behavior: 'smooth' });
+  }
+  packageForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const msg = document.getElementById('package-form-msg');
+    msg.className = 'form-msg';
+    const id = document.getElementById('package-id').value;
+    const payload = {
+      name: document.getElementById('pf-name').value,
+      price: document.getElementById('pf-price').value,
+      event_type: document.getElementById('pf-event-type').value,
+      description: document.getElementById('pf-desc').value,
+      included_services: document.getElementById('pf-services').value.split(',').map((s) => s.trim()).filter(Boolean),
+    };
+    try {
+      if (id) await api(`/packages/${id}`, { method: 'PUT', auth: true, body: payload });
+      else await api('/packages', { method: 'POST', auth: true, body: payload });
+      msg.textContent = 'Saved.'; msg.className = 'form-msg success';
+      loadPackagesAdmin();
+      setTimeout(() => (packageForm.style.display = 'none'), 500);
+    } catch (err) {
+      msg.textContent = err.message; msg.className = 'form-msg error';
+    }
+  });
+  async function deletePackage(id) {
+    if (!confirm('Remove this package?')) return;
+    try { await api(`/packages/${id}`, { method: 'DELETE', auth: true }); loadPackagesAdmin(); }
+    catch (err) { alert(err.message); }
+  }
+
+  // ---- Menu ----
+  async function loadMenuAdmin() {
+    const tbody = document.getElementById('menu-table-body');
+    tbody.innerHTML = '<tr><td colspan="4">Loading…</td></tr>';
+    try {
+      const items = await api('/menu', { auth: true });
+      tbody.innerHTML = items.map((i) => `
+        <tr>
+          <td>${i.name}</td>
+          <td>${i.category}</td>
+          <td>$${Number(i.price || 0).toFixed(2)}</td>
+          <td><button class="btn btn-sm btn-danger" onclick="deleteMenuItem(${i.id})">Delete</button></td>
+        </tr>`).join('') || '<tr><td colspan="4">No menu items yet.</td></tr>';
+    } catch (err) {
+      tbody.innerHTML = `<tr><td colspan="4">Could not load the menu: ${err.message}</td></tr>`;
+    }
+  }
+  const menuForm = document.getElementById('menu-form');
+  document.getElementById('new-menu-btn').addEventListener('click', () => (menuForm.style.display = 'block'));
+  document.getElementById('cancel-menu-form').addEventListener('click', () => (menuForm.style.display = 'none'));
+  menuForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const msg = document.getElementById('menu-form-msg');
+    msg.className = 'form-msg';
+    try {
+      await api('/menu', {
+        method: 'POST', auth: true,
+        body: {
+          name: document.getElementById('mf-name').value,
+          category: document.getElementById('mf-category').value,
+          price: document.getElementById('mf-price').value,
+          description: document.getElementById('mf-desc').value,
+        },
+      });
+      msg.textContent = 'Added.'; msg.className = 'form-msg success';
+      menuForm.reset();
+      loadMenuAdmin();
+    } catch (err) {
+      msg.textContent = err.message; msg.className = 'form-msg error';
+    }
+  });
+  async function deleteMenuItem(id) {
+    if (!confirm('Remove this menu item?')) return;
+    try { await api(`/menu/${id}`, { method: 'DELETE', auth: true }); loadMenuAdmin(); }
+    catch (err) { alert(err.message); }
+  }
+
+  // ---- Promo codes ----
+  async function loadPromoAdmin() {
+    const tbody = document.getElementById('promo-table-body');
+    tbody.innerHTML = '<tr><td colspan="6">Loading…</td></tr>';
+    try {
+      const promos = await api('/promo', { auth: true });
+      tbody.innerHTML = promos.map((p) => `
+        <tr>
+          <td>${p.code}</td>
+          <td>${p.discount_type === 'percent' ? p.discount_value + '%' : '$' + p.discount_value}</td>
+          <td>${p.used_count}${p.max_uses ? ' / ' + p.max_uses : ''}</td>
+          <td>${p.expires_at ? new Date(p.expires_at).toLocaleDateString('en-GB') : '—'}</td>
+          <td><span class="badge badge-${p.active ? 'Approved' : 'Rejected'}">${p.active ? 'Active' : 'Inactive'}</span></td>
+          <td>${p.active ? `<button class="btn btn-sm btn-danger" onclick="deactivatePromo(${p.id})">Deactivate</button>` : ''}</td>
+        </tr>`).join('') || '<tr><td colspan="6">No promo codes yet.</td></tr>';
+    } catch (err) {
+      tbody.innerHTML = `<tr><td colspan="6">Could not load promo codes: ${err.message}</td></tr>`;
+    }
+  }
+  const promoForm = document.getElementById('promo-form');
+  document.getElementById('new-promo-btn').addEventListener('click', () => (promoForm.style.display = 'block'));
+  document.getElementById('cancel-promo-form').addEventListener('click', () => (promoForm.style.display = 'none'));
+  promoForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const msg = document.getElementById('promo-form-msg');
+    msg.className = 'form-msg';
+    try {
+      await api('/promo', {
+        method: 'POST', auth: true,
+        body: {
+          code: document.getElementById('prf-code').value,
+          discount_type: document.getElementById('prf-type').value,
+          discount_value: document.getElementById('prf-value').value,
+          max_uses: document.getElementById('prf-max').value || null,
+          expires_at: document.getElementById('prf-expires').value || null,
+        },
+      });
+      msg.textContent = 'Created.'; msg.className = 'form-msg success';
+      promoForm.reset();
+      loadPromoAdmin();
+    } catch (err) {
+      msg.textContent = err.message; msg.className = 'form-msg error';
+    }
+  });
+  async function deactivatePromo(id) {
+    try { await api(`/promo/${id}`, { method: 'DELETE', auth: true }); loadPromoAdmin(); }
+    catch (err) { alert(err.message); }
+  }
+
+  // ---- Newsletter ----
+  async function loadNewsletterAdmin() {
+    const tbody = document.getElementById('newsletter-table-body');
+    tbody.innerHTML = '<tr><td colspan="2">Loading…</td></tr>';
+    try {
+      const subs = await api('/newsletter', { auth: true });
+      tbody.innerHTML = subs.map((s) => `
+        <tr><td>${s.email}</td><td>${new Date(s.subscribed_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</td></tr>
+      `).join('') || '<tr><td colspan="2">No subscribers yet.</td></tr>';
+    } catch (err) {
+      tbody.innerHTML = `<tr><td colspan="2">Could not load subscribers: ${err.message}</td></tr>`;
     }
   }
 

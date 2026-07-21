@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Packages — Amica House</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<nav class="site-nav">
+  <div class="wrap">
+    <a href="index.html" class="brand">Amica<span>House</span></a>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="services.html">Coffee Carts</a>
+      <a href="packages.html">Packages</a>
+      <a href="menu.html">Menu</a>
+      <a href="gallery.html">Gallery</a>
+      <a href="faq.html">FAQ</a>
+      <span id="nav-auth-slot" style="display:flex;gap:18px;align-items:center;"></span>
+    </div>
+  </div>
+</nav>
+
+<header class="hero" id="main-content" style="padding:56px 0;">
+  <div class="wrap">
+    <p class="eyebrow">Event Packages</p>
+    <h1 style="font-size:2.2rem;">A package for every occasion</h1>
+  </div>
+</header>
+
+<section>
+  <div class="wrap">
+    <div class="cart-grid" id="package-grid">
+      <p class="empty-state">Loading packages…</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div>&copy; 2026 Amica House Coffee Cart. All rights reserved.</div>
+    <div>hello@amicahouse.com &middot; +250 780 000 000 &middot; Kigali, Rwanda</div>
+  </div>
+</footer>
+
+<script src="js/api.js"></script>
+<script src="js/nav.js"></script>
+<script src="js/widgets.js"></script>
+<script>
+  async function loadPackages() {
+    const grid = document.getElementById('package-grid');
+    try {
+      const packages = await api('/packages');
+      grid.innerHTML = packages.map((p) => `
+        <div class="cart-card">
+          <div class="body">
+            <p class="eyebrow">${p.event_type || 'Any Event'}</p>
+            <h3>${p.name}</h3>
+            <p class="desc">${p.description || ''}</p>
+            <ul class="equip-list">${p.included_services.map((s) => `<li>${s}</li>`).join('')}</ul>
+            <div class="price-row">
+              <span class="price-tag">$${Number(p.price).toFixed(0)}<small>/day</small></span>
+              <a href="services.html" class="btn btn-primary btn-sm">Choose a cart</a>
+            </div>
+          </div>
+        </div>`).join('') || '<p class="empty-state">No packages available yet.</p>';
+    } catch (err) {
+      grid.innerHTML = `<p class="empty-state">Could not load packages: ${err.message}</p>`;
+    }
+  }
+  loadPackages();
+</script>
+</body>
+</html>

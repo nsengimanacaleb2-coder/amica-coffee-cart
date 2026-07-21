@@ -13,12 +13,40 @@ function signToken(user) {
   );
 }
 
+// GET /api/auth/captcha - simple math challenge, no external CAPTCHA service/keys required.
+// The answer is embedded in a short-lived signed token so the server doesn't need session storage.
+router.get('/captcha', (req, res) => {
+  const a = Math.floor(Math.random() * 8) + 1;
+  const b = Math.floor(Math.random() * 8) + 1;
+  const captchaToken = jwt.sign({ answer: a + b }, process.env.JWT_SECRET, { expiresIn: '10m' });
+  res.json({ question: `${a} + ${b} = ?`, captchaToken });
+});
+
+function verifyCaptcha(captchaToken, answer) {
+  try {
+    const payload = jwt.verify(captchaToken, process.env.JWT_SECRET);
+    return Number(payload.answer) === Number(answer);
+  } catch {
+    return false;
+  }
+}
+
 // POST /api/auth/register  (customer sign-up)
 router.post('/register', async (req, res) => {
   try {
-    const { name, email, phone, password } = req.body;
+    const { name, email, phone, password, captchaToken, captchaAnswer } = req.body;
     if (!name || !email || !password) {
       return res.status(400).json({ error: 'Name, email and password are required.' });
+    }
+    if (!captchaToken || !verifyCaptcha(captchaToken, captchaAnswer)) {
+      return res.status(400).json({ error: 'Captcha answer is incorrect. Please try again.' });
+    }
+    if (password.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters.' });
+    }
+    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    if (!emailOk) {
+      return res.status(400).json({ error: 'Please enter a valid email address.' });
     }
 
     const [existing] = await pool.query('SELECT id FROM users WHERE email = ?', [email]);

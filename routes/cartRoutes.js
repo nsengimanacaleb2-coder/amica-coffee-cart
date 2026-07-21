@@ -114,4 +114,22 @@ router.delete('/:id', requireAuth, requireAdmin, async (req, res) => {
   }
 });
 
+// GET /api/carts/:id/booked-dates?month=YYYY-MM - dates already reserved, for calendar display
+router.get('/:id/booked-dates', async (req, res) => {
+  try {
+    const { month } = req.query; // e.g. "2026-08"
+    let query = `SELECT event_date FROM bookings WHERE cart_id = ? AND status IN ('Pending', 'Approved')`;
+    const params = [req.params.id];
+    if (month) {
+      query += ' AND DATE_FORMAT(event_date, "%Y-%m") = ?';
+      params.push(month);
+    }
+    const [rows] = await pool.query(query, params);
+    res.json(rows.map((r) => r.event_date));
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Could not load booked dates.' });
+  }
+});
+
 module.exports = router;

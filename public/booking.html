@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Book a Coffee Cart — Amica House</title>
 <link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 </head>
 <body>
 
@@ -14,57 +15,102 @@
     <div class="nav-links">
       <a href="index.html">Home</a>
       <a href="services.html">Coffee Carts</a>
+      <a href="packages.html">Packages</a>
+      <a href="menu.html">Menu</a>
+      <a href="gallery.html">Gallery</a>
+      <a href="faq.html">FAQ</a>
       <span id="nav-auth-slot" style="display:flex;gap:18px;align-items:center;"></span>
     </div>
   </div>
 </nav>
 
-<section>
+<section id="main-content">
   <div class="wrap">
     <div class="section-head">
       <p class="eyebrow">Booking Request</p>
       <h2>Tell us about your event</h2>
     </div>
+
+    <div class="stepper">
+      <div class="step-dot active" data-step="1">1</div>
+      <div class="step-dot" data-step="2">2</div>
+      <div class="step-dot" data-step="3">3</div>
+    </div>
+
     <form class="ticket form-card" id="booking-form" style="max-width:640px;">
       <input type="hidden" id="cart_id">
-      <div class="field">
-        <label>Selected coffee cart</label>
-        <div id="cart-summary" style="padding:12px 14px;background:var(--kraft);border-radius:8px;font-size:0.9rem;"></div>
+
+      <!-- STEP 1: cart, package, date & time -->
+      <div class="step-panel active" data-step="1">
+        <div class="field">
+          <label>Selected coffee cart</label>
+          <div id="cart-summary" style="padding:12px 14px;background:var(--kraft);border-radius:8px;font-size:0.9rem;"></div>
+        </div>
+        <div class="field">
+          <label for="package_id">Add a package (optional)</label>
+          <select id="package_id"><option value="">No package — just the cart</option></select>
+        </div>
+        <div class="form-grid">
+          <div class="field">
+            <label for="event_date">Event date</label>
+            <input type="date" id="event_date" required>
+          </div>
+          <div class="field">
+            <label for="event_time">Event time</label>
+            <input type="time" id="event_time">
+          </div>
+        </div>
+        <div class="field">
+          <label>Availability this month</label>
+          <div class="mini-cal" id="mini-cal"><p style="font-size:0.8rem;opacity:0.7;">Select a cart to see its calendar.</p></div>
+        </div>
+        <div class="step-nav">
+          <span></span>
+          <button type="button" class="btn btn-primary btn-sm" onclick="goToStep(2)">Next: Event Details →</button>
+        </div>
       </div>
 
-      <div class="form-grid">
-        <div class="field">
-          <label for="event_type">Event type</label>
-          <select id="event_type" required>
-            <option value="">Select…</option>
-            <option>Wedding</option>
-            <option>Corporate Meeting</option>
-            <option>Birthday Party</option>
-            <option>Conference</option>
-            <option>Private Party</option>
-            <option>Other</option>
-          </select>
+      <!-- STEP 2: guests, location, map -->
+      <div class="step-panel" data-step="2">
+        <div class="form-grid">
+          <div class="field">
+            <label for="event_type">Event type</label>
+            <select id="event_type" required>
+              <option value="">Select…</option>
+              <option>Wedding</option>
+              <option>Corporate Meeting</option>
+              <option>Birthday Party</option>
+              <option>Conference</option>
+              <option>Private Party</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="guests">Number of guests</label>
+            <input type="number" id="guests" min="1" required>
+          </div>
+          <div class="field full">
+            <label for="location">Event location</label>
+            <input type="text" id="location" placeholder="e.g. Kigali Convention Center" required>
+          </div>
         </div>
         <div class="field">
-          <label for="guests">Number of guests</label>
-          <input type="number" id="guests" min="1" required>
-        </div>
-        <div class="field">
-          <label for="event_date">Event date</label>
-          <input type="date" id="event_date" required>
-        </div>
-        <div class="field">
-          <label for="event_time">Event time</label>
-          <input type="time" id="event_time">
+          <label>Pin the location (optional — helps us estimate travel)</label>
+          <div id="map" style="height:220px;border-radius:8px;"></div>
+          <p style="font-size:0.75rem;opacity:0.65;margin-top:6px;">Map data &copy; OpenStreetMap contributors. Drag the pin or search your address above.</p>
         </div>
         <div class="field full">
-          <label for="location">Event location</label>
-          <input type="text" id="location" placeholder="e.g. Kigali Convention Center" required>
-        </div>
-        <div class="field full">
-          <label for="message">Additional message</label>
+          <label for="message">Special requests</label>
           <textarea id="message" rows="3" placeholder="Anything else we should know?"></textarea>
         </div>
+        <div class="step-nav">
+          <button type="button" class="btn btn-outline btn-sm" onclick="goToStep(1)">← Back</button>
+          <button type="button" class="btn btn-primary btn-sm" onclick="goToStep(3)">Next: Payment →</button>
+        </div>
+      </div>
+
+      <!-- STEP 3: payment, promo, review -->
+      <div class="step-panel" data-step="3">
         <div class="field full">
           <label for="payment_method">Payment method</label>
           <select id="payment_method" required>
@@ -72,11 +118,29 @@
             <option value="Mobile Money">Mobile Money (MTN/Airtel)</option>
             <option value="Bank Transfer">Bank Transfer</option>
           </select>
-          <p style="font-size:0.78rem;opacity:0.65;margin-top:6px;">This is just your preferred method — payment itself is confirmed by Amica House after your booking is approved.</p>
+          <p style="font-size:0.78rem;opacity:0.65;margin-top:6px;">This is your preferred method — payment is confirmed by Amica House after approval.</p>
+        </div>
+        <div class="field full">
+          <label for="promo_code">Promo code (optional)</label>
+          <div style="display:flex;gap:8px;">
+            <input type="text" id="promo_code" placeholder="e.g. WELCOME10" style="text-transform:uppercase;">
+            <button type="button" class="btn btn-outline btn-sm" id="apply-promo">Apply</button>
+          </div>
+          <p id="promo-msg" style="font-size:0.8rem;margin-top:6px;"></p>
+        </div>
+        <div class="estimate-box">
+          <div>
+            <div style="font-size:0.78rem;opacity:0.7;">Estimated total</div>
+            <div class="amount" id="estimate-amount">$0</div>
+          </div>
+          <div id="estimate-discount" style="font-size:0.8rem;color:var(--sage);"></div>
+        </div>
+        <div class="step-nav">
+          <button type="button" class="btn btn-outline btn-sm" onclick="goToStep(2)">← Back</button>
+          <button type="submit" class="btn btn-primary">Submit Booking Request</button>
         </div>
       </div>
 
-      <button type="submit" class="btn btn-primary" style="width:100%;">Submit Booking Request</button>
       <div id="form-msg" class="form-msg"></div>
     </form>
   </div>
@@ -89,18 +153,35 @@
   </div>
 </footer>
 
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="js/api.js"></script>
 <script src="js/nav.js"></script>
+<script src="js/widgets.js"></script>
 <script>
   const user = guardPage('customer'); // must be logged in as a customer
 
   const params = new URLSearchParams(window.location.search);
   const cartId = params.get('cart');
   const prefDate = params.get('date');
+  const prefPackage = params.get('package');
 
   if (cartId) document.getElementById('cart_id').value = cartId;
   if (prefDate) document.getElementById('event_date').value = prefDate;
 
+  let appliedPromo = null;
+
+  // ---- Step navigation ----
+  function goToStep(step) {
+    document.querySelectorAll('.step-panel').forEach((p) => p.classList.toggle('active', Number(p.dataset.step) === step));
+    document.querySelectorAll('.step-dot').forEach((d) => {
+      const n = Number(d.dataset.step);
+      d.classList.toggle('active', n === step);
+      d.classList.toggle('done', n < step);
+    });
+    if (step === 3) updateEstimate();
+  }
+
+  // ---- Cart summary + packages ----
   async function loadCartSummary() {
     const summary = document.getElementById('cart-summary');
     if (!cartId) {
@@ -110,11 +191,133 @@
     try {
       const cart = await api(`/carts/${cartId}`);
       summary.innerHTML = `<strong>${cart.cart_name}</strong> — $${Number(cart.price).toFixed(0)}/day`;
+      loadCalendar(cart.id);
     } catch (err) {
       summary.textContent = 'Could not load selected cart.';
     }
   }
-  loadCartSummary();
+
+  async function loadPackages() {
+    const select = document.getElementById('package_id');
+    try {
+      const packages = await api('/packages');
+      packages.forEach((p) => {
+        const opt = document.createElement('option');
+        opt.value = p.id;
+        opt.textContent = `${p.name} (+$${Number(p.price).toFixed(0)})`;
+        if (prefPackage && String(p.id) === prefPackage) opt.selected = true;
+        select.appendChild(opt);
+      });
+    } catch (err) { /* non-critical */ }
+  }
+
+  // ---- Mini calendar of booked dates ----
+  async function loadCalendar(cartId, monthOffset = 0) {
+    const now = new Date();
+    now.setMonth(now.getMonth() + monthOffset);
+    const year = now.getFullYear();
+    const month = now.getMonth(); // 0-indexed
+    const monthStr = `${year}-${String(month + 1).padStart(2, '0')}`;
+    const container = document.getElementById('mini-cal');
+
+    try {
+      const bookedDates = await api(`/carts/${cartId}/booked-dates?month=${monthStr}`);
+      const bookedDays = new Set(bookedDates.map((d) => new Date(d).getDate()));
+      const firstDow = new Date(year, month, 1).getDay();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const monthName = now.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+
+      let cells = '';
+      for (let i = 0; i < firstDow; i++) cells += `<div class="day empty"></div>`;
+      for (let d = 1; d <= daysInMonth; d++) {
+        const booked = bookedDays.has(d);
+        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        cells += `<div class="day ${booked ? 'booked' : ''}" data-date="${dateStr}" ${booked ? '' : `onclick="selectCalendarDate('${dateStr}')"`}>${d}</div>`;
+      }
+
+      container.innerHTML = `
+        <div class="mini-cal-head">
+          <button type="button" class="btn btn-sm btn-outline" onclick="loadCalendar(${cartId}, ${monthOffset - 1})">‹</button>
+          <span>${monthName}</span>
+          <button type="button" class="btn btn-sm btn-outline" onclick="loadCalendar(${cartId}, ${monthOffset + 1})">›</button>
+        </div>
+        <div class="mini-cal-grid">
+          <div class="dow">S</div><div class="dow">M</div><div class="dow">T</div><div class="dow">W</div><div class="dow">T</div><div class="dow">F</div><div class="dow">S</div>
+          ${cells}
+        </div>
+        <p style="font-size:0.72rem;opacity:0.65;margin-top:8px;"><span style="color:var(--rust);">■</span> booked &nbsp; click an open day to select it</p>
+      `;
+    } catch (err) {
+      container.innerHTML = '<p style="font-size:0.8rem;opacity:0.7;">Could not load calendar.</p>';
+    }
+  }
+
+  window.selectCalendarDate = function (dateStr) {
+    document.getElementById('event_date').value = dateStr;
+    document.querySelectorAll('.mini-cal-grid .day').forEach((d) => d.classList.toggle('selected', d.dataset.date === dateStr));
+  };
+
+  // ---- Price estimate ----
+  async function updateEstimate() {
+    const cart_id = document.getElementById('cart_id').value;
+    const package_id = document.getElementById('package_id').value;
+    if (!cart_id) return;
+    try {
+      const est = await api('/bookings/estimate', {
+        method: 'POST',
+        body: { cart_id, package_id: package_id || null, promo_code: appliedPromo },
+      });
+      document.getElementById('estimate-amount').textContent = `$${est.total.toFixed(0)}`;
+      document.getElementById('estimate-discount').textContent = est.discount > 0 ? `−$${est.discount.toFixed(0)} discount applied` : '';
+    } catch (err) {
+      document.getElementById('estimate-amount').textContent = '—';
+    }
+  }
+
+  document.getElementById('apply-promo').addEventListener('click', async () => {
+    const code = document.getElementById('promo_code').value.trim();
+    const msg = document.getElementById('promo-msg');
+    if (!code) return;
+    try {
+      const promo = await api('/promo/validate', { method: 'POST', body: { code } });
+      appliedPromo = promo.code;
+      msg.textContent = `✓ ${promo.code} applied (${promo.discount_type === 'percent' ? promo.discount_value + '%' : '$' + promo.discount_value} off)`;
+      msg.style.color = 'var(--sage)';
+      updateEstimate();
+    } catch (err) {
+      appliedPromo = null;
+      msg.textContent = err.message;
+      msg.style.color = 'var(--rust)';
+      updateEstimate();
+    }
+  });
+
+  // ---- Free map (OpenStreetMap + Leaflet, no API key needed) ----
+  let map, marker;
+  function initMap() {
+    map = L.map('map').setView([-1.9441, 30.0619], 12); // Kigali
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' }).addTo(map);
+    marker = L.marker([-1.9441, 30.0619], { draggable: true }).addTo(map);
+  }
+
+  let geocodeTimeout;
+  document.getElementById('location').addEventListener('input', (e) => {
+    clearTimeout(geocodeTimeout);
+    const query = e.target.value;
+    if (query.length < 4) return;
+    geocodeTimeout = setTimeout(async () => {
+      try {
+        // Free OpenStreetMap geocoding (Nominatim) — no API key required
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query + ', Kigali, Rwanda')}`);
+        const results = await res.json();
+        if (results[0]) {
+          const { lat, lon } = results[0];
+          map.setView([lat, lon], 14);
+          marker.setLatLng([lat, lon]);
+        }
+      } catch (err) { /* geocoding is a nice-to-have, fail silently */ }
+    }, 700);
+  });
 
   document.getElementById('booking-form').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -129,11 +332,12 @@
     }
 
     try {
-      await api('/bookings', {
+      const result = await api('/bookings', {
         method: 'POST',
         auth: true,
         body: {
           cart_id,
+          package_id: document.getElementById('package_id').value || null,
           event_type: document.getElementById('event_type').value,
           event_date: document.getElementById('event_date').value,
           event_time: document.getElementById('event_time').value,
@@ -141,16 +345,21 @@
           guests: document.getElementById('guests').value,
           message: document.getElementById('message').value,
           payment_method: document.getElementById('payment_method').value,
+          promo_code: appliedPromo,
         },
       });
-      msg.textContent = 'Booking request submitted! Redirecting to your dashboard…';
+      msg.textContent = `Booking request submitted! Estimated total: $${result.total.toFixed(0)}. Redirecting…`;
       msg.className = 'form-msg success';
-      setTimeout(() => (window.location.href = 'dashboard-customer.html'), 900);
+      setTimeout(() => (window.location.href = 'dashboard-customer.html'), 1200);
     } catch (err) {
       msg.textContent = err.message;
       msg.className = 'form-msg error';
     }
   });
+
+  loadCartSummary();
+  loadPackages();
+  initMap();
 </script>
 </body>
 </html>

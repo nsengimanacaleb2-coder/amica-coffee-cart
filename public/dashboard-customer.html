@@ -13,22 +13,28 @@
     <a href="index.html" class="brand">Amica<span>House</span></a>
     <div class="nav-links">
       <a href="services.html">Coffee Carts</a>
+      <a href="packages.html">Packages</a>
+      <a href="menu.html">Menu</a>
+      <a href="gallery.html">Gallery</a>
+      <a href="faq.html">FAQ</a>
       <span id="nav-auth-slot" style="display:flex;gap:18px;align-items:center;"></span>
     </div>
   </div>
 </nav>
 
-<div class="dash-shell">
+<div class="dash-shell" id="main-content">
   <aside class="dash-side">
     <div class="who" id="side-who"></div>
     <nav>
       <a href="#" class="active">My Bookings</a>
       <a href="services.html">Book a New Cart</a>
+      <a href="#favorites-section">My Favorites</a>
       <a href="#profile-section">My Profile</a>
     </nav>
   </aside>
 
   <main class="dash-main">
+    <div id="countdown-banner"></div>
     <h2>My Bookings</h2>
     <div class="tabs" id="status-tabs">
       <button class="tab-btn active" data-status="">All</button>
@@ -39,6 +45,11 @@
     </div>
 
     <div id="bookings-list"></div>
+
+    <div id="favorites-section" style="margin-top:48px;">
+      <h2>My Favorites</h2>
+      <div class="cart-grid" id="favorites-grid"></div>
+    </div>
 
     <div id="profile-section" style="margin-top:48px;max-width:480px;">
       <h2>My Profile</h2>
@@ -64,6 +75,7 @@
 
 <script src="js/api.js"></script>
 <script src="js/nav.js"></script>
+<script src="js/widgets.js"></script>
 <script>
   const user = guardPage('customer');
   document.getElementById('side-who').textContent = `${user.name} · Customer`;
@@ -94,12 +106,13 @@
       <div class="table-card">
         <table>
           <thead>
-            <tr><th>Cart</th><th>Event</th><th>Date</th><th>Location</th><th>Status</th><th>Payment</th><th></th></tr>
+            <tr><th>Cart</th><th>Package</th><th>Event</th><th>Date</th><th>Location</th><th>Status</th><th>Payment</th><th></th></tr>
           </thead>
           <tbody>
             ${rows.map((b) => `
               <tr>
                 <td>${b.cart_name}</td>
+                <td>${b.package_name || '—'}</td>
                 <td>${b.event_type || '—'}</td>
                 <td>${formatDate(b.event_date)}</td>
                 <td>${b.location || '—'}</td>
@@ -109,15 +122,31 @@
                     ? `${b.payment_method}<br><span class="badge badge-${b.payment_status === 'Paid' ? 'Approved' : 'Pending'}">${b.payment_status}</span>`
                     : '—'}
                 </td>
-                <td>
-                  ${['Pending', 'Approved'].includes(b.status)
-                    ? `<button class="btn btn-sm btn-outline" onclick="cancelBooking(${b.id})">Cancel</button>`
-                    : ''}
+                <td style="white-space:normal;">
+                  ${b.status === 'Pending' ? `<button class="btn btn-sm btn-outline" onclick="openReschedule(${b.id}, '${b.event_date}')">Reschedule</button>` : ''}
+                  ${['Pending', 'Approved'].includes(b.status) ? `<button class="btn btn-sm btn-outline" onclick="cancelBooking(${b.id})">Cancel</button>` : ''}
+                  ${b.status === 'Approved' && b.payment_status !== 'Paid' ? `<button class="btn btn-sm btn-primary" onclick="payOnline(${b.id})">Pay Online</button>` : ''}
+                  <a class="btn btn-sm btn-outline" href="receipt.html?id=${b.id}" target="_blank">Receipt</a>
                 </td>
               </tr>`).join('')}
           </tbody>
         </table>
       </div>`;
+  }
+
+  function openReschedule(id, currentDate) {
+    const newDate = prompt('New event date (YYYY-MM-DD):', currentDate);
+    if (!newDate) return;
+    rescheduleBooking(id, newDate);
+  }
+
+  async function rescheduleBooking(id, event_date) {
+    try {
+      await api(`/bookings/${id}/reschedule`, { method: 'PATCH', auth: true, body: { event_date } });
+      loadBookings();
+    } catch (err) {
+      alert(err.message);
+    }
   }
 
   function formatDate(d) {
@@ -171,7 +200,64 @@
     }
   });
 
-  loadBookings();
+  function showCountdown() {
+    const banner = document.getElementById('countdown-banner');
+    const upcoming = allBookings
+      .filter((b) => b.status === 'Approved' && new Date(b.event_date) >= new Date())
+      .sort((a, b) => new Date(a.event_date) - new Date(b.event_date))[0];
+
+    if (!upcoming) { banner.innerHTML = ''; return; }
+    const days = Math.ceil((new Date(upcoming.event_date) - new Date()) / (1000 * 60 * 60 * 24));
+    banner.innerHTML = `
+      <div class="ticket" style="padding:16px 20px;margin-bottom:24px;display:flex;justify-content:space-between;align-items:center;">
+        <span>☕ Your next event — <strong>${upcoming.cart_name}</strong> — is in <strong>${days} day${days === 1 ? '' : 's'}</strong>!</span>
+        <span class="badge badge-Approved">Approved</span>
+      </div>`;
+  }
+
+  async function loadFavorites() {
+    const grid = document.getElementById('favorites-grid');
+    try {
+      const favorites = await api('/favorites', { auth: true });
+      grid.innerHTML = favorites.map((c) => `
+        <div class="cart-card">
+          <div class="thumb" style="background-image:url('${c.image || ''}')">${c.image ? '' : '☕'}</div>
+          <div class="body">
+            <h3>${c.cart_name}</h3>
+            <div class="price-row">
+              <span class="price-tag">$${Number(c.price).toFixed(0)}<small>/day</small></span>
+              <a href="cart-details.html?id=${c.id}" class="btn btn-primary btn-sm">View</a>
+            </div>
+          </div>
+        </div>`).join('') || '<p class="empty-state">No favorites yet — tap "Save to favorites" on any cart\'s page.</p>';
+    } catch (err) {
+      grid.innerHTML = `<p class="empty-state">Could not load favorites: ${err.message}</p>`;
+    }
+  }
+
+  async function payOnline(bookingId) {
+    try {
+      const { url } = await api(`/payments/checkout/${bookingId}`, { method: 'POST', auth: true });
+      window.location.href = url;
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+
+  async function handlePaymentRedirect() {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('payment') === 'success' && params.get('session_id') && params.get('booking')) {
+      try {
+        await api(`/payments/confirm/${params.get('booking')}?session_id=${params.get('session_id')}`, { auth: true });
+      } catch (err) { /* non-critical */ }
+      window.history.replaceState({}, '', 'dashboard-customer.html');
+      loadBookings().then(showCountdown);
+    }
+  }
+  handlePaymentRedirect();
+
+  loadBookings().then(showCountdown);
+  loadFavorites();
   loadProfile();
 </script>
 </body>

@@ -74,3 +74,58 @@ public/                  all frontend pages, css, and js
 ## Extending it later
 
 The spec's "future improvements" (calendar UI, Google Maps picker, WhatsApp/email notifications, online payment, analytics charts) can all be layered on top of this structure — the API already returns everything a calendar widget or charting library would need (e.g. `/api/reports/summary`, `/api/bookings?status=`).
+
+---
+
+## Phase 2: extended features
+
+A large second pass added gallery/packages/menu pages, a multi-step booking flow, favorites, promo codes, analytics, security hardening, accessibility, and payment integration points. Everything below is additive — your existing data and setup keep working.
+
+### New setup steps
+
+```bash
+# 1. Apply the new tables (packages, menu_items, favorites, promo_codes, newsletter_subscribers)
+mysql -u root -p amica_coffee_cart < database/migration_v2.sql
+
+# 2. Install the new dependencies
+npm install
+
+# 3. Seed sample packages, menu items, and a WELCOME10 promo code
+npm run seed:v2
+
+# 4. Restart the server
+npm start
+```
+
+Optional — add these to `.env` to activate email and online payments (both work fine left blank; the app just logs and skips):
+```
+SMTP_HOST=, SMTP_PORT=, SMTP_USER=, SMTP_PASS=, SMTP_FROM=   → real booking/status emails
+STRIPE_SECRET_KEY=, STRIPE_PUBLISHABLE_KEY=                  → "Pay Online" button on approved bookings
+```
+
+### What's included
+
+- **Homepage**: stronger hero slogan, live stats (events served, carts, customers, rating), partners strip, newsletter signup
+- **Gallery, Packages, Menu, FAQ**: new public pages (`gallery.html`, `packages.html`, `menu.html`, `faq.html`)
+- **Multi-step booking** (`booking.html`): cart + package selection, a calendar showing booked dates, a free OpenStreetMap location picker (no API key), live price estimate, promo codes
+- **Customer dashboard**: favorites, reschedule (Pending bookings), printable receipt with QR code (`receipt.html`), "Pay Online" via Stripe on approved bookings, a countdown to the next approved event
+- **Admin dashboard**: Analytics tab (revenue-by-month and event-type charts via Chart.js), CSV export of bookings, and full management of Packages, Menu, Promo Codes, and Newsletter subscribers
+- **Search & filters** on the Coffee Carts page (price, capacity, date availability)
+- **Site-wide chatbot widget** (`js/widgets.js`) — simple keyword matching against common questions, no external AI API needed
+- **WhatsApp click-to-chat** floating button
+- **Accessibility**: dark mode toggle, font-size +/− controls, skip-to-content link, focus-visible outlines
+- **Performance**: `loading="lazy"` on images, 1-day cache headers on static assets
+- **Security**: rate limiting on auth routes (`express-rate-limit`), a lightweight built-in math captcha on registration (no external CAPTCHA service/keys needed), stricter input validation
+- **Email notifications**: booking confirmation + status-change emails via `config/mailer.js` (no-ops safely until SMTP is configured)
+- **Payments**: real Stripe Checkout integration; PayPal/Flutterwave/MTN MoMo/Airtel Money are stubbed in `config/payments.js` with clear TODOs, since each needs its own business account and SDK
+
+### A note on security choices
+
+- **CAPTCHA**: implemented as a simple math challenge signed into a short-lived JWT, rather than reCAPTCHA/hCaptcha — those need a Google/Cloudflare site key you'd have to register for. Swap it out for reCAPTCHA later by replacing `GET /api/auth/captcha` and the corresponding frontend check.
+- **CSRF**: not added as separate middleware. This app authenticates with a JWT sent in an `Authorization` header (not cookies), which isn't automatically attached by the browser to cross-site requests — the classic CSRF attack vector. If you later switch to cookie-based sessions, add CSRF protection at that point.
+- **HTTPS**: this is a deployment concern, not something the app code controls. Put the app behind a reverse proxy (nginx, Render, Railway, etc.) with a TLS certificate (e.g. via Let's Encrypt/Certbot) in production.
+
+### Deliberately not included (tell me if you want these next)
+
+SMS reminders (needs a paid Twilio/Africa's Talking account), Messenger chat (needs a Facebook Page/app), a real LLM-powered chatbot (needs an API key + hosting), referral program / loyalty points / gift cards, a full blog CMS, and real photo/video uploads (needs file storage — currently gallery images are placeholder stock photos).
+

@@ -14,23 +14,41 @@
     <div class="nav-links">
       <a href="index.html">Home</a>
       <a href="services.html">Coffee Carts</a>
+      <a href="packages.html">Packages</a>
+      <a href="menu.html">Menu</a>
+      <a href="gallery.html">Gallery</a>
+      <a href="faq.html">FAQ</a>
       <a href="index.html#contact">Contact</a>
       <span id="nav-auth-slot" style="display:flex;gap:18px;align-items:center;"></span>
     </div>
   </div>
 </nav>
 
-<header class="hero">
+<header class="hero" id="main-content">
   <div class="wrap">
     <p class="eyebrow">Mobile Coffee Catering &middot; Kigali &amp; beyond</p>
-    <h1>A proper coffee cart, wherever your event calls home.</h1>
+    <h1>Every great event deserves a proper cup of coffee.</h1>
     <p>Amica House brings hand-pulled espresso, trained baristas, and a cart that looks the part to weddings, meetings, and parties. Pick a cart, pick a date, and we'll pour the rest.</p>
     <div class="hero-actions">
-      <a href="services.html" class="btn btn-primary">Browse Coffee Carts</a>
+      <a href="services.html" class="btn btn-primary">Book Now</a>
       <a href="#contact" class="btn btn-outline" style="color:var(--cream);border-color:rgba(255,255,255,0.5)">Ask a Question</a>
     </div>
+    <div class="stats-bar" id="stats-bar"></div>
   </div>
 </header>
+
+<section style="padding:36px 0;">
+  <div class="wrap">
+    <p class="eyebrow" style="text-align:center;display:block;">Trusted by</p>
+    <div class="partners-strip">
+      <span>Kigali Convention Center</span>
+      <span>Norrsken House</span>
+      <span>Radisson Blu</span>
+      <span>Impact Hub Kigali</span>
+      <span>Kigali Marriott</span>
+    </div>
+  </div>
+</section>
 
 <section id="services">
   <div class="wrap">
@@ -91,6 +109,18 @@
   </div>
 </section>
 
+<section style="background:var(--cream);">
+  <div class="wrap" style="max-width:480px;text-align:center;">
+    <p class="eyebrow">Stay in the loop</p>
+    <h2 style="font-size:1.5rem;">Get event tips & offers</h2>
+    <form id="newsletter-form" style="display:flex;gap:8px;margin-top:14px;">
+      <input type="email" id="newsletter-email" placeholder="you@example.com" required style="flex:1;">
+      <button type="submit" class="btn btn-primary btn-sm">Subscribe</button>
+    </form>
+    <p id="newsletter-msg" class="form-msg" style="max-width:none;"></p>
+  </div>
+</section>
+
 <footer>
   <div class="wrap">
     <div>&copy; 2026 Amica House Coffee Cart. All rights reserved.</div>
@@ -100,6 +130,7 @@
 
 <script src="js/api.js"></script>
 <script src="js/nav.js"></script>
+<script src="js/widgets.js"></script>
 <script>
   // Load a few carts for the homepage preview
   async function loadHomeCarts() {
@@ -148,6 +179,37 @@
 
   loadHomeCarts();
   loadTestimonials();
+
+  async function loadStats() {
+    const bar = document.getElementById('stats-bar');
+    try {
+      const s = await api('/reports/public-stats');
+      bar.innerHTML = `
+        <div class="item"><div class="num">${s.eventsServed}+</div><div class="label" style="color:var(--cream);opacity:0.75;">Events Served</div></div>
+        <div class="item"><div class="num">${s.totalCarts}</div><div class="label" style="color:var(--cream);opacity:0.75;">Coffee Carts</div></div>
+        <div class="item"><div class="num">${s.happyCustomers}+</div><div class="label" style="color:var(--cream);opacity:0.75;">Happy Customers</div></div>
+        <div class="item"><div class="num">${s.avgRating}★</div><div class="label" style="color:var(--cream);opacity:0.75;">Average Rating</div></div>
+      `;
+    } catch (err) {
+      bar.innerHTML = '';
+    }
+  }
+  loadStats();
+
+  document.getElementById('newsletter-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const msg = document.getElementById('newsletter-msg');
+    msg.className = 'form-msg';
+    try {
+      await api('/newsletter', { method: 'POST', body: { email: document.getElementById('newsletter-email').value } });
+      msg.textContent = 'Subscribed! Thanks for joining.';
+      msg.className = 'form-msg success';
+      document.getElementById('newsletter-email').value = '';
+    } catch (err) {
+      msg.textContent = err.message;
+      msg.className = 'form-msg error';
+    }
+  });
 </script>
 </body>
 </html>

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FAQ — Amica House</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<nav class="site-nav">
+  <div class="wrap">
+    <a href="index.html" class="brand">Amica<span>House</span></a>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="services.html">Coffee Carts</a>
+      <a href="packages.html">Packages</a>
+      <a href="menu.html">Menu</a>
+      <a href="gallery.html">Gallery</a>
+      <a href="faq.html">FAQ</a>
+      <span id="nav-auth-slot" style="display:flex;gap:18px;align-items:center;"></span>
+    </div>
+  </div>
+</nav>
+
+<header class="hero" id="main-content" style="padding:56px 0;">
+  <div class="wrap">
+    <p class="eyebrow">FAQ</p>
+    <h1 style="font-size:2.2rem;">Frequently asked questions</h1>
+  </div>
+</header>
+
+<section>
+  <div class="wrap" style="max-width:720px;">
+    <div id="faq-list">
+      <div class="faq-item">
+        <div class="faq-q">How far in advance should I book? <span>+</span></div>
+        <div class="faq-a">We recommend booking at least 2–3 weeks ahead, especially for weekend weddings and large corporate events, since carts get booked up.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">Do you travel outside Kigali? <span>+</span></div>
+        <div class="faq-a">Yes — enter your event location on the booking form and we'll confirm travel details and any additional travel fee.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">What happens after I submit a booking request? <span>+</span></div>
+        <div class="faq-a">Your request goes to Pending. We review cart availability and confirm within 24–48 hours — you'll see the status update in your dashboard and get an email.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">Can I change my event date after booking? <span>+</span></div>
+        <div class="faq-a">Yes, as long as your booking is still Pending — use the Reschedule option in your dashboard. Already-approved bookings should be changed by contacting us directly.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">What payment methods do you accept? <span>+</span></div>
+        <div class="faq-a">Cash on the day, Mobile Money, or Bank Transfer. Online card payment is available on select approved bookings.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">Do you provide cups, sugar, and milk options? <span>+</span></div>
+        <div class="faq-a">Yes — every cart comes fully stocked, including dairy-free milk options on request.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">How many guests can one cart serve? <span>+</span></div>
+        <div class="faq-a">It depends on the cart — the Classic cart handles up to 50 guests, Premium up to 150, and Deluxe up to 300. Check each cart's details page for capacity.</div>
+      </div>
+    </div>
+    <p style="text-align:center;margin-top:32px;opacity:0.8;">Still have a question? Use the chat button in the corner, or <a href="index.html#contact" style="color:var(--marigold);font-weight:600;">contact us</a>.</p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div>&copy; 2026 Amica House Coffee Cart. All rights reserved.</div>
+    <div>hello@amicahouse.com &middot; +250 780 000 000 &middot; Kigali, Rwanda</div>
+  </div>
+</footer>
+
+<script src="js/api.js"></script>
+<script src="js/nav.js"></script>
+<script src="js/widgets.js"></script>
+<script>
+  document.querySelectorAll('.faq-q').forEach((q) => {
+    q.addEventListener('click', () => {
+      const item = q.closest('.faq-item');
+      item.classList.toggle('open');
+      q.querySelector('span').textContent = item.classList.contains('open') ? '−' : '+';
+    });
+  });
+</script>
+</body>
+</html>
